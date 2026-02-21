@@ -11,6 +11,11 @@ if (!isset($_SESSION["user"])) {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $content = $_POST["content"] ?? "";
 
+    if (trim($content) != "" && strlen(trim($content)) < 3) {
+        $error = "Post content must be at least 3 characters (if not empty).";
+    }
+
+
     $tagsRaw = $_POST["tags"] ?? "";
     $tags = explode(",", $tagsRaw);
     $tags = array_map("trim", $tags);
@@ -19,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $_SESSION["posts"][] = new Post(
         $content,
         $_SESSION["user"],
-        $tags
+        $tags,
     );
 
     header("Location: index.php");
