@@ -18,6 +18,6 @@ class User
 
     public function __toString(): string
     {
-        return "User: {$this->name}";
+        return "User: $this->name";
     }
 }

@@ -11,12 +11,14 @@ class Post implements Renderable
     private string $content;
     private User $author;
     private array $tags;
+    private string $createdAt;
 
     public function __construct(string $content, User $author, array $tags = [])
     {
         $this->content = $content;
         $this->author = $author;
         $this->tags = $tags;
+        $this->createdAt = $this->now();
     }
 
     public function render(): string
@@ -28,8 +30,9 @@ class Post implements Renderable
             $safeTags = array_map("htmlspecialchars", $this->tags);
             $tagsText = " <small># " . implode(", ", $safeTags) . "</small>";
         }
+        $safeTime = htmlspecialchars($this->createdAt);
 
-        return "<p><b>{$safeAuthor}</b>: {$safeContent}
-        <small>({$this->now()})</small>{$tagsText}</p>";
+        return "<p><b>$safeAuthor</b>: $safeContent
+        <small>($safeTime)</small>$tagsText</p>";
     }
 }

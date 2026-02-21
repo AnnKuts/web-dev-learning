@@ -17,7 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 ?>
 
 <form method="POST">
+    <label for="name">Your name</label><br>
     <input
+            id="name"
             type="text"
             name="name"
             placeholder="Your name"

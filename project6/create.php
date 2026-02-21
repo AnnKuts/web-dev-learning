@@ -15,7 +15,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "Post content must be at least 3 characters (if not empty).";
     }
 
-
     $tagsRaw = $_POST["tags"] ?? "";
     $tags = explode(",", $tagsRaw);
     $tags = array_map("trim", $tags);
@@ -24,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $_SESSION["posts"][] = new Post(
         $content,
         $_SESSION["user"],
-        $tags,
+        $tags
     );
 
     header("Location: index.php");
@@ -33,9 +32,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 ?>
 
 <form method="POST">
-    <textarea name="content"></textarea>
+    <div>
+        <label for="content">Post content</label><br>
+        <textarea id="content" name="content"></textarea>
+    </div>
 
-    <input type="text" name="tags" placeholder="Tags">
+    <div>
+        <label for="tags">Tags (comma separated)</label><br>
+        <input id="tags" type="text" name="tags" placeholder="php, oop">
+    </div>
 
     <button type="submit">Publish</button>
 </form>
