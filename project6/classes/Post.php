@@ -9,14 +9,24 @@ class Post implements Renderable {
 
     private string $content;
     private User $author;
+    private array $tags;
 
-    public function __construct(string $content, User $author) {
+    public function __construct(string $content, User $author, array $tags = []) {
         $this->content = $content;
         $this->author = $author;
+        $this->tags = $tags;
     }
 
     public function render(): string {
-        return "<p><b>{$this->author->getName()}</b>: {$this->content}
-        <small>({$this->now()})</small></p>";
+        $safeAuthor = htmlspecialchars($this->author->getName());
+        $safeContent = htmlspecialchars($this->content);
+        $tagsText = "";
+        if (!empty($this->tags)) {
+            $safeTags = array_map("htmlspecialchars", $this->tags);
+            $tagsText = " <small>Tags: " . implode(", ", $safeTags) . "</small>";
+        }
+
+        return "<p><b>{$safeAuthor}</b>: {$safeContent}
+        <small>({$this->now()})</small>{$tagsText}</p>";
     }
 }

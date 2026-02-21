@@ -9,10 +9,19 @@ if (!isset($_SESSION["user"])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $content = $_POST["content"] ?? "";
+
+    $tagsRaw = $_POST["tags"] ?? "";
+    $tags = explode(",", $tagsRaw);
+    $tags = array_map("trim", $tags);
+    $tags = array_filter($tags, fn($t) => $t !== "");
+
     $_SESSION["posts"][] = new Post(
-        $_POST["content"],
-        $_SESSION["user"]
+        $content,
+        $_SESSION["user"],
+        $tags
     );
+
     header("Location: index.php");
     exit;
 }
@@ -20,5 +29,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <form method="POST">
     <textarea name="content"></textarea>
+
+    <input type="text" name="tags" placeholder="Tags">
+
     <button type="submit">Publish</button>
 </form>
