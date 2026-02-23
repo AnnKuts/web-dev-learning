@@ -12,7 +12,7 @@ $logger = Logger::getInstance();
 
 $limit = (int) (Request::request("limit", 10));
 if ($limit <= 0) {
-    $limit = 10;
+    $limit = 5;
 }
 if ($limit > 20) {
     $limit = 20;

@@ -38,8 +38,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div>
 
     <div>
-        <label for="tags">Tags (comma separated)</label><br>
-        <input id="tags" type="text" name="tags" placeholder="php, oop">
+        <label for="tags">Tags</label><br>
+        <input id="tags" type="text" name="tags" placeholder="blog, receipe">
     </div>
 
     <button type="submit">Publish</button>
