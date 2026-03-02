@@ -10,8 +10,8 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->session()->get('user'); // array|null
-        $posts = $request->session()->get('posts', []); // array<Post>
+        $user = $request->session()->get('user');
+        $posts = $request->session()->get('posts', []);
 
         $limit = (int) $request->query('limit', 10);
         if ($limit <= 0) {
@@ -64,7 +64,7 @@ class PostController extends Controller
         $tagsRaw = (string) $request->input('tags', '');
         $tags = array_filter(array_map('trim', explode(',', $tagsRaw)), fn ($t) => $t !== '');
 
-        $user = $request->session()->get('user'); // ['name' => ...]
+        $user = $request->session()->get('user');
         $authorName = $user['name'] ?? 'Unknown';
 
         $posts = $request->session()->get('posts', []);
