@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Hash;
 class UserController extends Controller
 {
     public function __construct(private readonly UserService $userService) {}
-
     public function index()
     {
         $this->authorize('viewAny', User::class);
@@ -31,12 +30,10 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
         $validated = $request->validated();
-
         $updatedUser = $this->userService->updateBio(
             $user,
             $validated['user_bio']
         );
-
         return (new UserResource($updatedUser))->response();
     }
 
@@ -44,7 +41,6 @@ class UserController extends Controller
     {
         $this->authorize('delete', $user);
         $this->userService->delete($user);
-
         return response()->json(['message' => 'User deleted successfully'], 204);
     }
 

@@ -30,7 +30,6 @@ class PostController extends Controller
     {
         $this->authorize('create', Post::class);
         $validated = $request->validated();
-
         $post = $this->postService->create(
             array_merge($validated, ['user_id' => auth()->id()]),
             $validated['tags'] ?? []
@@ -43,13 +42,11 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
         $validated = $request->validated();
-
         $updatedPost = $this->postService->update(
             $post,
             $validated,
             $validated['tags'] ?? []
         );
-
         return (new PostResource($updatedPost->load(['user', 'tags'])))->response();
     }
 

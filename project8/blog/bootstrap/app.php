@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
-            if ($request->expectsJson()) {
+            if ($request->is('api/*')) {
                 return response()->json([
                     'message' => 'Resource not found.',
                     'error' => 'The requested resource could not be found.'
@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (Illuminate\Validation\ValidationException $e, $request) {
-            if ($request->expectsJson()) {
+            if ($request->is('api/*')) {
                 return response()->json([
                     'message' => 'Validation failed.',
                     'errors' => $e->errors()
@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (Illuminate\Auth\Access\AuthorizationException $e, $request) {
-            if ($request->expectsJson()) {
+            if ($request->is('api/*')) {
                 return response()->json([
                     'message' => 'Unauthorized.',
                     'error' => 'You do not have permission to perform this action.'
