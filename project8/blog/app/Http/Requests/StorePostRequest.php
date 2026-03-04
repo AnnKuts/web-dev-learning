@@ -24,7 +24,6 @@ class StorePostRequest extends FormRequest
         return [
             'header' => 'required|string|max:255',
             'description' => 'required|string',
-            'user_id' => 'required|exists:users,id',
             'tags' => 'array',
             'tags.*' => 'exists:tags,id'
         ];

@@ -32,7 +32,7 @@ class PostController extends Controller
         $validated = $request->validated();
 
         $post = $this->postService->create(
-            $validated,
+            array_merge($validated, ['user_id' => auth()->id()]),
             $validated['tags'] ?? []
         );
 

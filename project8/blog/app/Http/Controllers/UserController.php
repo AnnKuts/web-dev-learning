@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -44,5 +46,20 @@ class UserController extends Controller
         $this->userService->delete($user);
 
         return response()->json(['message' => 'User deleted successfully'], 204);
+    }
+
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+        $validated = $request->validated();
+
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'user_bio' => $validated['user_bio'] ?? null,
+        ]);
+
+        return (new UserResource($user))->response()->setStatusCode(201);
     }
 }
