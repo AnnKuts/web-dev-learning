@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder
 
         $tags = $tags->concat(Tag::factory(5)->create());
 
-        $createPost = function (User $user, string $header = null, string $description = null) use ($tags): Post {
+        $createPost = function (User $user, ?string $header=null, ?string $description=null) use ($tags): Post {
             $post = Post::create([
                 'user_id'     => $user->id,
                 'header'      => $header ?? fake()->sentence(rand(4, 8)),
