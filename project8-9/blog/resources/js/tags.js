@@ -1,5 +1,5 @@
 import { fetchAllTags, createTag, deleteTag, readResponse } from './api.js';
-import { escapeHtml, showToast, closeModal } from './ui.js';
+import { renderListError, escapeHtml, showToast, closeModal } from './ui.js';
 import { restoreArticleDraft, saveArticleDraft } from './storage.js';
 
 export function getSelectedTagIds(containerId) {
@@ -61,7 +61,7 @@ export async function loadTags() {
             </div>
         `).join('');
     } catch (err) {
-        container.innerHTML = `<div class="p-6 text-center text-rose-600 bg-rose-50 rounded-2xl col-span-full">Помилка: ${escapeHtml(err.message)}</div>`;
+        renderListError(container, err);
     }
 }
 

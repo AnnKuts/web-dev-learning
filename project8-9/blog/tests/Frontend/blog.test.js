@@ -155,3 +155,51 @@ test('client validation blocks publication of invalid fields', async () => {
     assert.ok(document.getElementById('postDescriptionError').innerText);
     assert.ok(localStorage.getItem(DRAFT_STORAGE_KEY));
 });
+
+test('post cards show a short excerpt and open the full article safely', async () => {
+    const { loadPosts, loadPost } = await import('../../resources/js/posts.js');
+    const description = `<b>Текст</b> ${'🙂'.repeat(250)}\nПовний текст статті`;
+    const post = {
+        id: 7, header: '<script>Заголовок</script>', description,
+        created_at: '2026-01-01T12:00:00Z', user: { username: 'Anna' },
+        tags: [{ tag_name: 'Laravel' }],
+    };
+    const detail = { ...post, header: 'Актуальний заголовок', description: description + '\nОновлено на сервері' };
+    const urls = [];
+    mock.method(globalThis, 'fetch', async url => {
+        urls.push(url);
+        return Response.json({ data: url === '/api/posts/7' ? detail : [post] });
+    });
+    await loadPosts(1);
+    const card = document.getElementById('postsList').innerHTML;
+    const excerpt = Array.from(description.replace(/\s+/g, ' ')).slice(0, 240).join('') + '…';
+    assert.ok(card.includes(escapeHtml(excerpt)));
+    assert.ok(card.includes(escapeHtml(post.header)));
+    assert.ok(!card.includes('Повний текст статті'));
+    assert.ok(card.includes('Читати повністю'));
+
+    assert.ok(card.includes('href="/posts/7"'));
+    await loadPost(7);
+    assert.equal(document.getElementById('viewPostDescription').textContent, detail.description);
+    assert.equal(document.getElementById('viewPostHeader').textContent, detail.header);
+    assert.deepEqual(urls, ['/api/posts?page=1', '/api/posts/7']);
+    assert.equal(document.getElementById('viewPostTags').textContent, '#Laravel');
+});
+
+for (const status of [401, 403, 404, 'network']) {
+    test(`article detail API error (${status}) clears the previous article and shows an error`, async () => {
+        const { loadPost } = await import('../../resources/js/posts.js');
+        document.getElementById('viewPostDescription').textContent = 'Previous article';
+        mock.method(globalThis, 'fetch', async url => {
+            assert.equal(url, '/api/posts/7');
+            assert.equal(document.getElementById('viewPostHeader').textContent, 'Завантаження статті…');
+            if (status === 'network') throw new TypeError('Failed to fetch');
+            return Response.json({ message: 'Rejected' }, { status });
+        });
+        await loadPost(7);
+        assert.equal(document.getElementById('viewPostDescription').textContent, '');
+        assert.equal(document.getElementById('viewPostHeader').textContent, 'Не вдалося завантажити статтю');
+        const error = document.getElementById('viewPostDescription').innerHTML;
+        assert.ok(error.includes(status === 401 ? 'Потрібна авторизація' : status === 404 ? 'Статтю не знайдено' : 'Помилка завантаження'));
+    });
+}

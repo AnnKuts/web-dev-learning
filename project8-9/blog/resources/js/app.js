@@ -1,5 +1,5 @@
 import { initAuth } from './auth.js';
-import { initPosts, loadPosts } from './posts.js';
+import { initPosts, loadPosts, loadPost } from './posts.js';
 import { initPostForms, startEditPost } from './post-form.js';
 import { initTags, loadTags, loadTagsForSelects } from './tags.js';
 import { initUsers, loadUsers } from './users.js';
@@ -8,6 +8,11 @@ import { initModals } from './ui.js';
 let currentTab = 'posts';
 
 function refreshCurrentTab() {
+    const postPage = document.getElementById('postDetail');
+    if (postPage) {
+        loadPost(postPage.dataset.postId);
+        return;
+    }
     if (currentTab === 'posts') loadPosts();
     if (currentTab === 'tags') loadTags();
     if (currentTab === 'users') loadUsers();
@@ -38,17 +43,23 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTagsForSelects();
         refreshCurrentTab();
     });
-    initPostForms(page => loadPosts(page));
+    initPostForms(page => {
+        if (document.getElementById('postDetail')) {
+            location.assign('/');
+            return;
+        }
+        loadPosts(page);
+    });
     initPosts(startEditPost);
     initTags(refreshCurrentTab);
     initUsers();
     document.querySelectorAll('[data-tab]').forEach(button => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
-    document.getElementById('refreshBtn').addEventListener('click', () => {
+    document.getElementById('refreshBtn')?.addEventListener('click', () => {
         loadTagsForSelects();
         refreshCurrentTab();
     });
     loadTagsForSelects();
-    loadPosts();
+    refreshCurrentTab();
 });

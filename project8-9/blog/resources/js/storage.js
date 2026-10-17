@@ -31,7 +31,7 @@ export function saveArticleDraft() {
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
         const draftStatus = document.getElementById('draftStatus');
         if (draftStatus) {
-            draftStatus.textContent = `Чернетку збережено о ${draft.savedAt}`;
+            document.getElementById('draftStatusText').textContent = `Чернетку збережено о ${draft.savedAt}`;
             draftStatus.classList.remove('hidden');
         }
     } else {
@@ -61,7 +61,7 @@ export function restoreArticleDraft(tagsOnly = false) {
     }
     updateCounters('post');
     if (draftStatus && draft.savedAt) {
-        draftStatus.textContent = `Чернетку відновлено (${draft.savedAt})`;
+        document.getElementById('draftStatusText').textContent = `Чернетку відновлено (${draft.savedAt})`;
         draftStatus.classList.remove('hidden');
     }
 }

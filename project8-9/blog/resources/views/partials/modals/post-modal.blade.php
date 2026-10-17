@@ -5,7 +5,8 @@
                 <h2 class="text-lg font-bold text-slate-900">Нова стаття</h2>
             </div>
             <div id="draftStatus" class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 hidden">
-                <i class="fa-solid fa-floppy-disk mr-1"></i> Чернетка збережена
+                <i class="fa-solid fa-floppy-disk mr-1" aria-hidden="true"></i>
+                <span id="draftStatusText">Чернетка збережена</span>
             </div>
         </div>
 

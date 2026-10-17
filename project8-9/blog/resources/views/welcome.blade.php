@@ -18,7 +18,7 @@
 
     <div class="flex items-center space-x-2">
         <button type="button" data-modal-open="newTagModal" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg transition shadow-2xs">
-            + Новий тег
+            <i class="fa-solid fa-plus mr-1" aria-hidden="true"></i> Новий тег
         </button>
         <button type="button" id="refreshBtn" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg transition shadow-2xs">
             <i class="fa-solid fa-arrows-rotate mr-1"></i> Оновити

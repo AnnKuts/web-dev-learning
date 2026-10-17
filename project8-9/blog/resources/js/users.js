@@ -1,5 +1,5 @@
 import { fetchUsers, readResponse } from './api.js';
-import { escapeHtml } from './ui.js';
+import { renderListError, escapeHtml } from './ui.js';
 
 let currentUserPage = 1;
 
@@ -13,11 +13,6 @@ export async function loadUsers(page = currentUserPage) {
 
     try {
         const res = await fetchUsers(page);
-        if (res.status === 401) {
-            container.innerHTML = `<div class="p-6 text-center text-amber-700 bg-amber-50 rounded-2xl col-span-full">Потрібна авторизація для перегляду користувачів.</div>`;
-            if (pagination) pagination.innerHTML = '';
-            return;
-        }
         const json = await readResponse(res);
         const users = json.data || [];
 
@@ -47,13 +42,13 @@ export async function loadUsers(page = currentUserPage) {
             pagination.innerHTML = `
                 <div class="text-xs text-slate-500 font-medium">Сторінка ${meta.current_page || 1} з ${meta.last_page || 1} (Всього: ${meta.total || users.length})</div>
                 <div class="flex space-x-2">
-                    <button type="button" data-action="page-users" data-page="${currentUserPage - 1}" ${currentUserPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Попередня</button>
-                    <button type="button" data-action="page-users" data-page="${currentUserPage + 1}" ${currentUserPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна</button>
+                    <button type="button" data-action="page-users" data-page="${currentUserPage - 1}" ${currentUserPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}><i class="fa-solid fa-chevron-left mr-1" aria-hidden="true"></i> Попередня</button>
+                    <button type="button" data-action="page-users" data-page="${currentUserPage + 1}" ${currentUserPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна <i class="fa-solid fa-chevron-right ml-1" aria-hidden="true"></i></button>
                 </div>
             `;
         }
     } catch (err) {
-        container.innerHTML = `<div class="p-6 text-center text-rose-600 bg-rose-50 rounded-2xl col-span-full">Помилка: ${escapeHtml(err.message)}</div>`;
+        renderListError(container, err);
     }
 }
 

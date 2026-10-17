@@ -97,3 +97,17 @@ export function initModals() {
         if (event.target.classList.contains('modal-backdrop')) event.target.classList.add('hidden');
     });
 }
+
+export function renderListError(container, error) {
+    if (error.status === 401) {
+        container.innerHTML = `
+            <div class="bg-amber-50 border border-amber-200 text-amber-800 p-6 rounded-2xl text-center col-span-full">
+                <h3 class="font-bold text-base mb-1">Потрібна авторизація</h3>
+                <p class="text-sm mb-4">Для перегляду даних увійдіть у систему.</p>
+                <button type="button" data-modal-open="loginModal" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg">Увійти</button>
+            </div>
+        `;
+        return;
+    }
+    container.innerHTML = `<div class="p-6 text-center text-rose-600 bg-rose-50 rounded-2xl col-span-full">Помилка завантаження: ${escapeHtml(error.message)}</div>`;
+}

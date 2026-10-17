@@ -10,10 +10,6 @@
                             <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                             Dev Auth Bypass ({{ config('auth.dev_user_email') }})
                         </span>
-                    @else
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            Sanctum Required
-                        </span>
                     @endif
                 </div>
             </div>

@@ -12,13 +12,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
     @include('partials.toast')
     @include('partials.header')
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         @yield('content')
     </main>
+
+    <footer class="border-t border-slate-200 py-5 text-center text-xs text-slate-500">
+        &copy; 2026 Made by Anna Kuts
+    </footer>
 
     @include('partials.modals.post-modal')
     @include('partials.modals.tag-modal')

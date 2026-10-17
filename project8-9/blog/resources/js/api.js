@@ -46,6 +46,10 @@ export async function fetchPosts(page = 1) {
     return fetch(`/api/posts?page=${page}`, { headers: getHeaders() });
 }
 
+export async function fetchPost(id, signal) {
+    return fetch(`/api/posts/${id}`, { headers: getHeaders(), signal });
+}
+
 export async function createPost(data) {
     return fetch('/api/posts', {
         method: 'POST',

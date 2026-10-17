@@ -1,8 +1,45 @@
-import { fetchPosts, deletePost, readResponse } from './api.js';
-import { escapeHtml, showToast } from './ui.js';
+import { fetchPosts, fetchPost, deletePost, readResponse } from './api.js';
+import { renderListError, escapeHtml, showToast } from './ui.js';
 
 let currentPostPage = 1;
 const currentPostsMap = new Map();
+let postRequest;
+
+function getPostExcerpt(description) {
+    const characters = Array.from(description.replace(/\s+/g, ' ').trim());
+    return characters.length > 240 ? `${characters.slice(0, 240).join('').trimEnd()}…` : characters.join('');
+}
+
+export async function loadPost(id) {
+    postRequest?.abort();
+    const request = new AbortController();
+    postRequest = request;
+    const header = document.getElementById('viewPostHeader');
+    const description = document.getElementById('viewPostDescription');
+    const meta = document.getElementById('viewPostMeta');
+    const tags = document.getElementById('viewPostTags');
+    header.textContent = 'Завантаження статті…';
+    description.textContent = '';
+    meta.textContent = '';
+    tags.textContent = '';
+    try {
+        const json = await readResponse(await fetchPost(id, request.signal));
+        if (request.signal.aborted) return;
+        const post = json.data;
+        header.textContent = post.header;
+        description.textContent = post.description;
+        meta.innerHTML = `
+            <span><i class="fa-solid fa-user mr-1" aria-hidden="true"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
+            <span><i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
+        `;
+        tags.textContent = (post.tags || []).map(tag => `#${tag.tag_name}`).join(' ');
+    } catch (error) {
+        if (request.signal.aborted) return;
+        header.textContent = 'Не вдалося завантажити статтю';
+        if (error.status === 404) error.message = 'Статтю не знайдено. Можливо, її видалено.';
+        renderListError(description, error);
+    }
+}
 
 export async function loadPosts(page = currentPostPage) {
     currentPostPage = page;
@@ -16,18 +53,6 @@ export async function loadPosts(page = currentPostPage) {
 
     try {
         const res = await fetchPosts(page);
-        if (res.status === 401) {
-            container.innerHTML = `
-                <div class="bg-amber-50 border border-amber-200 text-amber-800 p-6 rounded-2xl text-center">
-                    <h3 class="font-bold text-base mb-1">Потрібна авторизація</h3>
-                    <p class="text-sm mb-4">Для перегляду та взаємодії зі статтями потрібен Bearer токен або включений DEV_AUTH_BYPASS.</p>
-                    <button type="button" data-modal-open="loginModal" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg">Увійти</button>
-                </div>
-            `;
-            if (pagination) pagination.innerHTML = '';
-            return;
-        }
-
         const json = await readResponse(res);
         const posts = json.data || [];
         currentPostsMap.clear();
@@ -42,9 +67,10 @@ export async function loadPosts(page = currentPostPage) {
         container.innerHTML = posts.map(post => `
             <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs hover:shadow-md transition">
                 <div class="flex items-start justify-between gap-4">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-slate-900 mb-2">${escapeHtml(post.header)}</h3>
-                        <p class="text-sm text-slate-600 whitespace-pre-line leading-relaxed mb-4">${escapeHtml(post.description)}</p>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-bold text-slate-900 mb-2 break-words"><a href="/posts/${post.id}" class="hover:text-indigo-600">${escapeHtml(post.header)}</a></h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-3 line-clamp-3 break-words">${escapeHtml(getPostExcerpt(post.description))}</p>
+                        <a href="/posts/${post.id}" class="inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline mb-4">Читати повністю</a>
                         
                         <div class="flex flex-wrap items-center gap-2 mb-4">
                             ${(post.tags || []).map(t => `
@@ -56,7 +82,6 @@ export async function loadPosts(page = currentPostPage) {
 
                         <div class="flex items-center space-x-3 text-xs text-slate-400">
                             <span class="font-medium text-slate-600"><i class="fa-solid fa-user mr-1 text-slate-500"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
-                            <span>•</span>
                             <span><i class="fa-regular fa-clock mr-1 text-slate-400"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
                         </div>
                     </div>
@@ -78,13 +103,13 @@ export async function loadPosts(page = currentPostPage) {
             pagination.innerHTML = `
                 <div class="text-xs text-slate-500 font-medium">Сторінка ${meta.current_page || 1} з ${meta.last_page || 1} (Всього: ${meta.total || posts.length})</div>
                 <div class="flex space-x-2">
-                    <button type="button" data-action="page-posts" data-page="${currentPostPage - 1}" ${currentPostPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Попередня</button>
-                    <button type="button" data-action="page-posts" data-page="${currentPostPage + 1}" ${currentPostPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна</button>
+                    <button type="button" data-action="page-posts" data-page="${currentPostPage - 1}" ${currentPostPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}><i class="fa-solid fa-chevron-left mr-1" aria-hidden="true"></i> Попередня</button>
+                    <button type="button" data-action="page-posts" data-page="${currentPostPage + 1}" ${currentPostPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна <i class="fa-solid fa-chevron-right ml-1" aria-hidden="true"></i></button>
                 </div>
             `;
         }
     } catch (err) {
-        container.innerHTML = `<div class="p-6 text-center text-rose-600 bg-rose-50 rounded-2xl">Помилка завантаження: ${escapeHtml(err.message)}</div>`;
+        renderListError(container, err);
     }
 }
 
