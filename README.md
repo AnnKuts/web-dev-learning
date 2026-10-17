@@ -4,12 +4,12 @@ A collection of my web development projects and practical assignments completed 
 
 ## Table of Contents
 
-- [`project6/`](project6/) — PHP fundamentals, OOP, HTTP requests, sessions, and a simple blog
-- [`project7/`](project7/) — Introduction to Laravel, routing, controllers, and Blade templates
-- [`project8-9/blog/`](project8-9/blog/) — Laravel Blog/CMS with authentication, CRUD operations, a JSON API, and an interactive frontend
-- [`docs/empat/`](docs/empat/) — Empat School assignments and documentation
-- [`docs/kpi/`](docs/kpi/) — KPI practical work reports
-- 
+- [`project6/`](project6/) - PHP fundamentals, OOP, HTTP requests, sessions, and a simple blog
+- [`project7/`](project7/) - Introduction to Laravel, routing, controllers, and Blade templates
+- [`project8-9/blog/`](project8-9/blog/) - Laravel Blog/CMS with authentication, CRUD operations, a JSON API, and an interactive frontend
+- [`docs/empat/`](docs/empat/) - Empat School assignments and documentation
+- [`docs/kpi/`](docs/kpi/) - KPI practical work reports
+
 ## Getting Started
 
 The main application is located in [`project8-9/blog/`](project8-9/blog/).
