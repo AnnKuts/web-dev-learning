@@ -6,10 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+        public function up(): void
     {
         Schema::create('post_tag', function (Blueprint $table) {
             $table->foreignId('post_id')
@@ -21,10 +18,7 @@ return new class extends Migration
             $table->primary(['post_id', 'tag_id']);
         });
     }
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+        public function down(): void
     {
         Schema::dropIfExists('post_tag');
     }

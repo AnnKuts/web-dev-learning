@@ -24,7 +24,6 @@ return [
         ],
     ],
 
-
     'passwords' => [
         'users' => [
             'provider' => 'users',
