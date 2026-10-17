@@ -12,7 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->prependToGroup('api', \App\Http\Middleware\DevAuthBypass::class);
+        $middleware->priority([
+            \App\Http\Middleware\DevAuthBypass::class,
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {

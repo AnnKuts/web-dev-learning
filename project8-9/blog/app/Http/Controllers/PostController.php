@@ -45,7 +45,7 @@ class PostController extends Controller
         $updatedPost = $this->postService->update(
             $post,
             $validated,
-            $validated['tags'] ?? []
+            $validated['tags'] ?? null
         );
         return (new PostResource($updatedPost->load(['user', 'tags'])))->response();
     }

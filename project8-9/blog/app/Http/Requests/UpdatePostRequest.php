@@ -6,26 +6,29 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePostRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'header' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
+            'header' => 'sometimes|string|min:5|max:100',
+            'description' => 'sometimes|string|min:20',
             'tags' => 'array',
             'tags.*' => 'exists:tags,id'
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'header.min' => 'Заголовок статті має містити щонайменше 5 символів.',
+            'header.max' => 'Заголовок статті не повинен перевищувати 100 символів.',
+            'description.min' => 'Контент статті має містити щонайменше 20 символів.',
+            'tags.array' => 'Теги мають бути масивом.',
+            'tags.*.exists' => 'Обраний тег не існує.',
         ];
     }
 }
