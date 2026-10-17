@@ -44,6 +44,19 @@ POST-запити до `/api/posts` спрямовуються через мар
 
 ### Крок 7. Перевірити роботу.
 
-> Перевірте форму з коректними даними, з некоректними даними для кожного правила валідації (порожнє поле, значення поза діапазоном, неправильний формат) і роботу `localStorage` — значення повинні зберігатися і відновлюватися після перезавантаження сторінки.
+> Перевірте форму з коректними даними, з некоректними даними для кожного правила валідації (порожнє поле, значення поза діапазоном, неправильний формат) і роботу `localStorage` - значення повинні зберігатися і відновлюватися після перезавантаження сторінки.
+
+<img width="1311" height="933" alt="Screenshot 2026-10-17 at 16 12 00" src="https://github.com/user-attachments/assets/50fc0c46-fdb2-4212-bf22-3bf56ebf3c05" />
+
+*Створення чернетки*
+
+<img width="1311" height="933" alt="Screenshot 2026-10-17 at 16 12 54" src="https://github.com/user-attachments/assets/bfe44d37-f498-4a0b-89e2-973691d4364b" />
+
+*Відновлення чернетки після завантаження знову*
+
+<img width="1142" height="601" alt="Screenshot 2026-10-17 at 16 15 00" src="https://github.com/user-attachments/assets/e36ef8bb-93be-47c1-9a20-21b4cb49dadd" /> 
+<img width="880" height="105" alt="Screenshot 2026-10-17 at 16 25 02" src="https://github.com/user-attachments/assets/6ed3fc61-5b5d-41f1-8e8e-02a9eee45dbc" />
+
+*Проходження тестів*
 
 Тести серверної валідації знаходяться у [`AuthModeTest.php`](../../project8-9/blog/tests/Feature/AuthModeTest.php) (метод `test_post_validation_rules_for_variant_3()`), а перевірки клієнтської валідації, обробки помилок і роботи чернетки у [`blog.test.js`](../../project8-9/blog/tests/Frontend/blog.test.js)
