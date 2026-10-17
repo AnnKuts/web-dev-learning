@@ -6,26 +6,31 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StorePostRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'header' => 'required|string|max:255',
-            'description' => 'required|string',
+            'header' => 'required|string|min:5|max:100',
+            'description' => 'required|string|min:20',
             'tags' => 'array',
             'tags.*' => 'exists:tags,id'
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'header.required' => 'Заголовок статті обов\'язковий.',
+            'header.min' => 'Заголовок статті має містити щонайменше 5 символів.',
+            'header.max' => 'Заголовок статті не повинен перевищувати 100 символів.',
+            'description.required' => 'Контент статті обов\'язковий.',
+            'description.min' => 'Контент статті має містити щонайменше 20 символів.',
+            'tags.array' => 'Теги мають бути масивом.',
+            'tags.*.exists' => 'Обраний тег не існує.',
         ];
     }
 }

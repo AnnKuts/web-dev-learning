@@ -39,7 +39,7 @@ class AuthModeTest extends TestCase
 
         $updateResponse = $this->putJson("/api/posts/{$postId}", [
             'header'      => 'Updated Header',
-            'description' => 'Updated Description',
+            'description' => 'Updated Description Text',
         ]);
         $updateResponse->assertStatus(200);
 
@@ -181,5 +181,36 @@ class AuthModeTest extends TestCase
         $this->assertNotFalse($devBypassIndex, 'DevAuthBypass must be in middleware priority list.');
         $this->assertNotFalse($authSanctumIndex, 'Authenticate must be in middleware priority list.');
         $this->assertLessThan($authSanctumIndex, $devBypassIndex, 'DevAuthBypass must have higher priority than Authenticate.');
+    }
+
+    public function test_post_validation_rules_for_variant_3(): void
+    {
+        app()['env'] = 'local';
+        config(['app.env' => 'local']);
+        config(['auth.dev_bypass' => true]);
+
+        $resShortHeader = $this->postJson('/api/posts', [
+            'header' => '1234',
+            'description' => 'Valid description with more than twenty characters',
+        ]);
+        $resShortHeader->assertStatus(422)->assertJsonValidationErrors(['header']);
+
+        $resLongHeader = $this->postJson('/api/posts', [
+            'header' => str_repeat('a', 101),
+            'description' => 'Valid description with more than twenty characters',
+        ]);
+        $resLongHeader->assertStatus(422)->assertJsonValidationErrors(['header']);
+
+        $resShortDesc = $this->postJson('/api/posts', [
+            'header' => 'Valid Header',
+            'description' => 'Short text (<20)',
+        ]);
+        $resShortDesc->assertStatus(422)->assertJsonValidationErrors(['description']);
+
+        $resValid = $this->postJson('/api/posts', [
+            'header' => 'Valid Header 5 to 100',
+            'description' => 'Valid description with more than twenty characters',
+        ]);
+        $resValid->assertStatus(201);
     }
 }
