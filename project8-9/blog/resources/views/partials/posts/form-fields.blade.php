@@ -9,7 +9,7 @@
     $descErrorId = $isPost ? 'postDescriptionError' : 'editPostDescriptionError';
 
     $tagsContainerId = $isPost ? 'postTagCheckboxes' : 'editPostTagCheckboxes';
-    $tagsErrorId = $isPost ? 'postTagsError' : null;
+    $tagsErrorId = $isPost ? 'postTagsError' : 'editPostTagsError';
 @endphp
 
 <div>
@@ -41,7 +41,5 @@
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-1">Теги (tags)</label>
     <div id="{{ $tagsContainerId }}" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
-    @if($tagsErrorId)
-        <p id="{{ $tagsErrorId }}" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-    @endif
+    <p id="{{ $tagsErrorId }}" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
 </div>

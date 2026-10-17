@@ -87,3 +87,13 @@ export function renderUserState(currentUser, authToken) {
         `;
     }
 }
+
+export function initModals() {
+    document.addEventListener('click', (event) => {
+        const openButton = event.target.closest('[data-modal-open]');
+        const closeButton = event.target.closest('[data-modal-close]');
+        if (openButton) openModal(openButton.dataset.modalOpen);
+        if (closeButton) closeModal(closeButton.dataset.modalClose);
+        if (event.target.classList.contains('modal-backdrop')) event.target.classList.add('hidden');
+    });
+}

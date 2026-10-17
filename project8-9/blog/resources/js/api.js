@@ -69,8 +69,8 @@ export async function deletePost(id) {
     });
 }
 
-export async function fetchTags() {
-    return fetch('/api/tags', { headers: getHeaders() });
+export async function fetchTags(page = 1) {
+    return fetch(`/api/tags?page=${page}`, { headers: getHeaders() });
 }
 
 export async function createTag(data) {
@@ -113,4 +113,31 @@ export async function logoutUser() {
         method: 'POST',
         headers: getHeaders(),
     });
+}
+
+export async function readResponse(response) {
+    const json = response.status === 204 ? {} : await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = response.status === 401 ? 'Потрібна авторизація. Увійдіть у систему.'
+            : response.status === 403 ? 'У вас немає дозволу на цю дію.'
+            : json.message || `Помилка запиту (${response.status}).`;
+        const error = new Error(message);
+        error.status = response.status;
+        error.errors = json.errors || {};
+        throw error;
+    }
+    return json;
+}
+
+export async function fetchAllTags() {
+    const tags = [];
+    let page = 1;
+    let lastPage;
+    do {
+        const json = await readResponse(await fetchTags(page));
+        tags.push(...json.data);
+        lastPage = json.meta.last_page;
+        page++;
+    } while (page <= lastPage);
+    return tags;
 }

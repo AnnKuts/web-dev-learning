@@ -4,11 +4,11 @@
         <form id="loginForm" class="space-y-4">
             <div>
                 <label for="loginEmail" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input type="email" id="loginEmail" required value="admin@example.com" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                <input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             </div>
             <div>
                 <label for="loginPassword" class="block text-sm font-medium text-slate-700 mb-1">Пароль</label>
-                <input type="password" id="loginPassword" required value="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                <input type="password" id="loginPassword" required autocomplete="current-password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             </div>
             <div class="flex justify-end space-x-2 pt-2">
                 <button type="button" data-modal-close="loginModal" class="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50">Скасувати</button>

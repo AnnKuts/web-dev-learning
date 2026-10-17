@@ -22,13 +22,13 @@ class PostService
         });
     }
 
-    public function update(Post $post, array $data, array $tagIds = []): Post
+    public function update(Post $post, array $data, ?array $tagIds = null): Post
     {
         return DB::transaction(function () use ($post, $data, $tagIds) {
 
             $post->update($data);
 
-            if (!empty($tagIds)) {
+            if ($tagIds !== null) {
                 $post->tags()->sync($tagIds);
             }
 
