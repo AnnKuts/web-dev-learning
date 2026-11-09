@@ -8,4 +8,4 @@ Route::get('/', function () {
 
 Route::get('/posts/{id}', function (string $id) {
     return view('posts.show', ['postId' => $id]);
-})->whereNumber('id')->name('posts.show');
+})->whereNumber('id')->name('posts.page');
