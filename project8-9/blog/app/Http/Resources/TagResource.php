@@ -13,6 +13,8 @@ class TagResource extends JsonResource
             'id' => $this->id,
             'tag_name' => $this->tag_name,
             'tag_slug' => $this->tag_slug,
+            'user_id' => $this->user_id,
+            'can_delete' => $request->user()?->can('delete', $this->resource) ?? false,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'posts' => PostResource::collection($this->whenLoaded('posts')),

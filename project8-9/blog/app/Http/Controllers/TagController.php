@@ -26,7 +26,7 @@ class TagController extends Controller
     public function store(StoreTagRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $tag = $this->tagService->create($validated);
+        $tag = $this->tagService->create(array_merge($validated, ['user_id' => $request->user()->id]));
         return (new TagResource($tag))->response()->setStatusCode(201);
     }
 
@@ -39,6 +39,7 @@ class TagController extends Controller
 
     public function destroy(Tag $tag): JsonResponse
     {
+        $this->authorize('delete', $tag);
         $this->tagService->delete($tag);
         return response()->json(['message' => 'Tag deleted successfully'], 204);
     }

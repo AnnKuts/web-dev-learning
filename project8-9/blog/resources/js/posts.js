@@ -1,9 +1,18 @@
 import { fetchPosts, fetchPost, deletePost, readResponse } from './api.js';
 import { renderListError, escapeHtml, showToast } from './ui.js';
+import { renderPagination } from './pagination.js';
 
 let currentPostPage = 1;
 const currentPostsMap = new Map();
 let postRequest;
+let postsRequest;
+
+export function clearPostTagFilter() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('tag');
+    window.history.replaceState(null, '', url);
+    document.getElementById('postTagFilter')?.classList.add('hidden');
+}
 
 function getPostExcerpt(description) {
     const characters = Array.from(description.replace(/\s+/g, ' ').trim());
@@ -32,7 +41,7 @@ export async function loadPost(id) {
             <span><i class="fa-solid fa-user mr-1" aria-hidden="true"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
             <span><i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
         `;
-        tags.textContent = (post.tags || []).map(tag => `#${tag.tag_name}`).join(' ');
+        tags.innerHTML = (post.tags || []).map(tag => `<a href="/?tag=${tag.id}" data-action="filter-tag" class="hover:underline">#${escapeHtml(tag.tag_name)}</a>`).join(' ');
     } catch (error) {
         if (request.signal.aborted) return;
         header.textContent = 'Не вдалося завантажити статтю';
@@ -47,19 +56,37 @@ export async function loadPosts(page = currentPostPage) {
     const pagination = document.getElementById('postsPagination');
     if (!container) return;
 
+    postsRequest?.abort();
+    const request = new AbortController();
+    postsRequest = request;
+    const query = document.getElementById('postSearch')?.value.trim() || '';
+    const tagId = new URLSearchParams(window.location.search).get('tag');
+    const tagFilter = document.getElementById('postTagFilter');
+    const tagLabel = document.getElementById('postTagLabel');
+    tagFilter?.classList.toggle('hidden', !tagId);
+    if (tagLabel) {
+        tagLabel.textContent = tagId ? 'Тег' : '';
+        tagLabel.removeAttribute('title');
+    }
+
     currentPostsMap.clear();
     if (pagination) pagination.innerHTML = '';
     container.innerHTML = '<div class="p-8 text-center text-slate-400">Завантаження статей...</div>';
 
     try {
-        const res = await fetchPosts(page);
+        const res = await fetchPosts(page, query, request.signal, tagId);
         const json = await readResponse(res);
+        if (request.signal.aborted) return;
+        if (tagLabel && json.filter_tag) {
+            tagLabel.textContent = `#${json.filter_tag.tag_name}`;
+            tagLabel.title = tagLabel.textContent;
+        }
         const posts = json.data || [];
         currentPostsMap.clear();
         posts.forEach(p => currentPostsMap.set(p.id, p));
 
         if (posts.length === 0) {
-            container.innerHTML = '<div class="p-8 text-center text-slate-400 bg-white border border-slate-200 rounded-2xl">Статей поки немає. Створіть першу!</div>';
+            container.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white border border-slate-200 rounded-2xl">${query ? 'За цим заголовком статей не знайдено.' : tagId ? 'За цим тегом статей поки немає.' : 'Статей поки немає. Створіть першу!'}</div>`;
             if (pagination) pagination.innerHTML = '';
             return;
         }
@@ -74,9 +101,9 @@ export async function loadPosts(page = currentPostPage) {
                         
                         <div class="flex flex-wrap items-center gap-2 mb-4">
                             ${(post.tags || []).map(t => `
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <a href="/?tag=${t.id}" data-action="filter-tag" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">
                                     #${escapeHtml(t.tag_name)}
-                                </span>
+                                </a>
                             `).join('')}
                         </div>
 
@@ -98,25 +125,26 @@ export async function loadPosts(page = currentPostPage) {
             </article>
         `).join('');
 
-        const meta = json.meta || {};
-        if (pagination) {
-            pagination.innerHTML = `
-                <div class="text-xs text-slate-500 font-medium">Сторінка ${meta.current_page || 1} з ${meta.last_page || 1} (Всього: ${meta.total || posts.length})</div>
-                <div class="flex space-x-2">
-                    <button type="button" data-action="page-posts" data-page="${currentPostPage - 1}" ${currentPostPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}><i class="fa-solid fa-chevron-left mr-1" aria-hidden="true"></i> Попередня</button>
-                    <button type="button" data-action="page-posts" data-page="${currentPostPage + 1}" ${currentPostPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна <i class="fa-solid fa-chevron-right ml-1" aria-hidden="true"></i></button>
-                </div>
-            `;
-        }
+        renderPagination(pagination, json.meta || {}, 'page-posts', posts.length);
     } catch (err) {
+        if (request.signal.aborted) return;
         renderListError(container, err);
     }
 }
 
-export function initPosts(onEdit) {
+export function initPosts(onEdit, onTagSelected) {
+    document.getElementById('postSearch')?.addEventListener('input', () => loadPosts(1));
     document.addEventListener('click', async (event) => {
         const button = event.target.closest('[data-action]');
         if (!button || button.disabled) return;
+        if (button.dataset.action === 'filter-tag') {
+            if (document.getElementById('postDetail') || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            window.history.replaceState(null, '', button.href);
+            document.getElementById('postSearch').value = '';
+            onTagSelected();
+            return;
+        }
         const id = Number(button.dataset.id);
         if (button.dataset.action === 'edit-post' && currentPostsMap.has(id)) {
             onEdit(currentPostsMap.get(id));

@@ -14,7 +14,13 @@ class Tag extends Model
     protected $fillable = [
         'tag_name',
         'tag_slug',
+        'user_id',
     ];
+
+    protected function casts(): array
+    {
+        return ['user_id' => 'integer'];
+    }
 
     public function posts(): BelongsToMany
     {

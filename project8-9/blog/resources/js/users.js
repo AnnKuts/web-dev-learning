@@ -1,5 +1,6 @@
 import { fetchUsers, readResponse } from './api.js';
 import { renderListError, escapeHtml } from './ui.js';
+import { renderPagination } from './pagination.js';
 
 let currentUserPage = 1;
 
@@ -37,16 +38,7 @@ export async function loadUsers(page = currentUserPage) {
             </div>
         `).join('');
 
-        const meta = json.meta || {};
-        if (pagination) {
-            pagination.innerHTML = `
-                <div class="text-xs text-slate-500 font-medium">Сторінка ${meta.current_page || 1} з ${meta.last_page || 1} (Всього: ${meta.total || users.length})</div>
-                <div class="flex space-x-2">
-                    <button type="button" data-action="page-users" data-page="${currentUserPage - 1}" ${currentUserPage <= 1 ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}><i class="fa-solid fa-chevron-left mr-1" aria-hidden="true"></i> Попередня</button>
-                    <button type="button" data-action="page-users" data-page="${currentUserPage + 1}" ${currentUserPage >= (meta.last_page || 1) ? 'disabled class="opacity-50 cursor-not-allowed px-3 py-1 text-xs border rounded-lg bg-white"' : 'class="px-3 py-1 text-xs border rounded-lg bg-white hover:bg-slate-50"'}>Наступна <i class="fa-solid fa-chevron-right ml-1" aria-hidden="true"></i></button>
-                </div>
-            `;
-        }
+        renderPagination(pagination, json.meta || {}, 'page-users', users.length);
     } catch (err) {
         renderListError(container, err);
     }

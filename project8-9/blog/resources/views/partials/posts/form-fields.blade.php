@@ -43,3 +43,4 @@
     <div id="{{ $tagsContainerId }}" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
     <p id="{{ $tagsErrorId }}" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
 </div>
+<p id="{{ $prefix }}FormError" role="alert" class="hidden rounded-lg bg-rose-50 p-3 text-sm text-rose-600"></p>

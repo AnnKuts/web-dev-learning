@@ -36,11 +36,12 @@ class DatabaseSeeder extends Seeder
         ];
 
         $tags = collect($tagNames)->map(fn ($name) => Tag::create([
+            'user_id' => $admin->id,
             'tag_name' => $name,
             'tag_slug' => Str::slug($name),
         ]));
 
-        $tags = $tags->concat(Tag::factory(5)->create());
+        $tags = $tags->concat(Tag::factory(5)->create(['user_id' => $admin->id]));
 
         $createPost = function (User $user, ?string $header=null, ?string $description=null) use ($tags): Post {
             $post = Post::create([

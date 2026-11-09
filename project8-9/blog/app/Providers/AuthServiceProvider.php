@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\Post;
+use App\Models\Tag;
 use App\Models\User;
 use App\Policies\PostPolicy;
+use App\Policies\TagPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -13,6 +15,7 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         Post::class => PostPolicy::class,
+        Tag::class => TagPolicy::class,
         User::class => UserPolicy::class,
     ];
 
@@ -24,7 +27,10 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        Gate::before(function (?User $user, string $ability) {
+        Gate::before(function (?User $user, string $ability, array $arguments) {
+            if ($ability === 'delete' && ($arguments[0] ?? null) instanceof Tag) {
+                return null;
+            }
             if (app()->isLocal() && filter_var(config('auth.dev_bypass', false), FILTER_VALIDATE_BOOLEAN)) {
                 return true;
             }

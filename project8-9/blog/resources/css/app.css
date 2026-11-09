@@ -9,3 +9,27 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer components {
+    .pagination {
+        @apply mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between;
+    }
+
+    .pagination:empty {
+        display: none;
+    }
+
+    .pagination-info {
+        @apply text-center text-xs font-medium text-slate-500 sm:text-left;
+    }
+
+    .pagination-controls {
+        @apply grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto;
+    }
+
+    .pagination-button {
+        @apply inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-2xs transition-colors;
+        @apply enabled:hover:border-indigo-300 enabled:hover:bg-indigo-50 enabled:hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50;
+        @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600;
+    }
+}
