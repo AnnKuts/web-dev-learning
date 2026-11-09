@@ -51,13 +51,13 @@ export async function loadTags() {
 
         container.innerHTML = tags.map(tag => `
             <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-2xs hover:shadow-sm transition">
-                <div>
-                    <h4 class="font-bold text-slate-900 text-sm">#${escapeHtml(tag.tag_name)}</h4>
-                    <p class="text-xs text-slate-400">slug: ${escapeHtml(tag.tag_slug)}</p>
-                </div>
-                <button type="button" data-action="delete-tag" data-id="${tag.id}" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Видалити тег">
+                <a href="/?tag=${tag.id}" data-action="filter-tag" class="min-w-0 flex-1 hover:text-indigo-600">
+                    <h4 class="font-bold text-sm break-words">#${escapeHtml(tag.tag_name)}</h4>
+                    <p class="text-xs text-slate-400 break-words">${escapeHtml(tag.tag_slug)}</p>
+                </a>
+                ${tag.can_delete ? `<button type="button" data-action="delete-tag" data-id="${tag.id}" class="shrink-0 text-slate-300 hover:text-rose-600 p-1 transition" title="Видалити тег">
                     <i class="fa-solid fa-trash-can"></i>
-                </button>
+                </button>` : ''}
             </div>
         `).join('');
     } catch (err) {

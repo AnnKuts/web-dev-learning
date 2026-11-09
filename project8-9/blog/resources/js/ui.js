@@ -48,12 +48,12 @@ export function renderUserState(currentUser, authToken) {
 
     if (authToken && currentUser) {
         stateDiv.innerHTML = `
-            <div class="flex items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-                <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase shadow-inner">
+            <div class="flex w-full min-w-0 lg:w-auto items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
+                <div class="w-6 h-6 shrink-0 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase shadow-inner">
                     ${escapeHtml((currentUser.username || 'U')[0])}
                 </div>
-                <span class="text-xs font-semibold text-slate-800 max-w-[120px] truncate">${escapeHtml(currentUser.username)}</span>
-                <button id="logoutBtn" type="button" title="Вийти з акаунту" class="inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
+                <span class="min-w-0 flex-1 text-xs font-semibold text-slate-800 lg:max-w-[120px] truncate">${escapeHtml(currentUser.username)}</span>
+                <button id="logoutBtn" type="button" title="Вийти з акаунту" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
                     <span>Вийти</span>
                 </button>
@@ -61,12 +61,12 @@ export function renderUserState(currentUser, authToken) {
         `;
     } else if (authToken) {
         stateDiv.innerHTML = `
-            <div class="flex items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-                <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+            <div class="flex w-full min-w-0 lg:w-auto items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
+                <div class="w-6 h-6 shrink-0 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-key text-[10px]"></i>
                 </div>
-                <span class="text-xs font-medium text-slate-700">Токен активний</span>
-                <button id="logoutBtn" type="button" title="Вийти" class="inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
+                <span class="min-w-0 flex-1 truncate text-xs font-medium text-slate-700">Токен активний</span>
+                <button id="logoutBtn" type="button" title="Вийти" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
                     <span>Вийти</span>
                 </button>
@@ -74,7 +74,7 @@ export function renderUserState(currentUser, authToken) {
         `;
     } else {
         stateDiv.innerHTML = `
-            <div class="flex items-center space-x-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <button type="button" data-modal-open="loginModal" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition-colors cursor-pointer">
                     <i class="fa-solid fa-right-to-bracket text-slate-400"></i>
                     <span>Увійти</span>
@@ -86,6 +86,34 @@ export function renderUserState(currentUser, authToken) {
             </div>
         `;
     }
+}
+
+export function initHeaderMenu() {
+    const toggle = document.getElementById('headerMenuToggle');
+    const menu = document.getElementById('headerMenu');
+    if (!toggle || !menu) return;
+    const header = toggle.closest('header');
+    const icon = toggle.querySelector('i');
+
+    function setOpen(open) {
+        menu.classList.toggle('hidden', !open);
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Закрити меню' : 'Відкрити меню');
+        icon.classList.toggle('fa-bars', !open);
+        icon.classList.toggle('fa-xmark', open);
+    }
+
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('click', (event) => {
+        if (!header.contains(event.target) || event.target.closest('[data-modal-open], #logoutBtn')) setOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            toggle.focus();
+        }
+    });
+    window.matchMedia('(min-width: 64rem)').addEventListener('change', () => setOpen(false));
 }
 
 export function initModals() {

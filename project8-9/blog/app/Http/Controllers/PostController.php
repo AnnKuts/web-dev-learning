@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
+use App\Http\Resources\TagResource;
 use App\Models\Post;
+use App\Models\Tag;
 use App\Services\PostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,13 +19,20 @@ class PostController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Post::class);
-        $validated = $request->validate(['q' => 'nullable|string']);
+        $validated = $request->validate([
+            'q' => 'nullable|string',
+            'tag' => 'nullable|integer|min:1',
+        ]);
         $query = trim($validated['q'] ?? '');
+        $tag = isset($validated['tag']) ? Tag::findOrFail($validated['tag']) : null;
         $posts = Post::with(['user', 'tags'])
             ->when($query !== '', fn ($posts) => $posts->where('header', 'like', '%' . $query . '%'))
+            ->when($tag, fn ($posts) => $posts->whereHas('tags', fn ($tags) => $tags->whereKey($tag->id)))
             ->latest()->orderByDesc('id')
             ->paginate(15)->withQueryString();
-        return PostResource::collection($posts);
+        return PostResource::collection($posts)->additional([
+            'filter_tag' => $tag ? new TagResource($tag) : null,
+        ]);
     }
 
     public function show(Post $post)

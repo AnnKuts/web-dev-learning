@@ -42,9 +42,10 @@ export function getHeaders() {
     return headers;
 }
 
-export async function fetchPosts(page = 1, query = '', signal) {
+export async function fetchPosts(page = 1, query = '', signal, tagId) {
     const params = new URLSearchParams({ page });
     if (query) params.set('q', query);
+    if (tagId) params.set('tag', tagId);
     return fetch(`/api/posts?${params}`, { headers: getHeaders(), signal });
 }
 
