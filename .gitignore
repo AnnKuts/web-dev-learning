@@ -144,3 +144,12 @@ vite.config.ts.timestamp-*
 # Php
 composer.phar
 .php-cs-fixer.cache
+
+.[Dd][Ss]_[Ss][Tt][Oo][Rr][Ee]
+._*
+__MACOSX/
+[Tt]humbs.db
+[Dd]esktop.ini
+*.swp
+*.swo
+*~
