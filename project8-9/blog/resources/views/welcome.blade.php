@@ -27,10 +27,7 @@
 </div>
 
 <section id="tab-posts" class="tab-content">
-    <div id="postsList" class="space-y-4">
-        <div class="p-8 text-center text-slate-400">Завантаження статей...</div>
-    </div>
-    <div id="postsPagination" class="mt-6 flex items-center justify-between"></div>
+    @include('partials.posts.list')
 </section>
 
 <section id="tab-tags" class="tab-content hidden">

@@ -14,5 +14,8 @@
         <p id="viewPostTags" class="text-xs font-medium text-indigo-700 break-words mb-5"></p>
         <div id="viewPostDescription" class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words"></div>
     </article>
+    <section id="publishedPosts" class="hidden mt-8" aria-label="Список статей">
+        @include('partials.posts.list')
+    </section>
 </div>
 @endsection

@@ -11,6 +11,10 @@ class PostResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'title' => $this->header,
+            'content' => $this->description,
+            'author' => $this->whenLoaded('user', fn () => $this->user?->username),
+            'published_at' => $this->created_at,
             'header' => $this->header,
             'description' => $this->description,
             'created_at' => $this->created_at,

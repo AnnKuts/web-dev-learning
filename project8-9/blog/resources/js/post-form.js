@@ -47,6 +47,11 @@ export function initPostForms(onSaved) {
             const header = document.getElementById(`${prefix}Header`).value.trim();
             const description = document.getElementById(`${prefix}Description`).value.trim();
             clearPostErrors(prefix);
+            const formError = document.getElementById(`${prefix}FormError`);
+            if (formError) {
+                formError.textContent = '';
+                formError.classList.add('hidden');
+            }
             if (isNew) saveArticleDraft();
             if (!validatePostFields(header, description, prefix)) {
                 showToast('Будь ласка, виправте помилки у формі', true);
@@ -71,6 +76,10 @@ export function initPostForms(onSaved) {
                 onSaved(isNew ? 1 : undefined);
             } catch (error) {
                 if (error.status === 422) showPostErrors(prefix, error.errors);
+                if (formError) {
+                    formError.textContent = error.message;
+                    formError.classList.remove('hidden');
+                }
                 showToast(error.message, true);
             } finally {
                 button.disabled = false;

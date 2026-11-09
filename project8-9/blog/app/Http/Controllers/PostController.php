@@ -8,15 +8,21 @@ use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Services\PostService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
     public function __construct(private readonly PostService $postService) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Post::class);
-        $posts = Post::with(['user', 'tags'])->paginate(15);
+        $validated = $request->validate(['q' => 'nullable|string']);
+        $query = trim($validated['q'] ?? '');
+        $posts = Post::with(['user', 'tags'])
+            ->when($query !== '', fn ($posts) => $posts->where('header', 'like', '%' . $query . '%'))
+            ->latest()->orderByDesc('id')
+            ->paginate(15)->withQueryString();
         return PostResource::collection($posts);
     }
 

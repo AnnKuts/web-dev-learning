@@ -4,6 +4,7 @@ import { renderListError, escapeHtml, showToast } from './ui.js';
 let currentPostPage = 1;
 const currentPostsMap = new Map();
 let postRequest;
+let postsRequest;
 
 function getPostExcerpt(description) {
     const characters = Array.from(description.replace(/\s+/g, ' ').trim());
@@ -47,19 +48,25 @@ export async function loadPosts(page = currentPostPage) {
     const pagination = document.getElementById('postsPagination');
     if (!container) return;
 
+    postsRequest?.abort();
+    const request = new AbortController();
+    postsRequest = request;
+    const query = document.getElementById('postSearch')?.value.trim() || '';
+
     currentPostsMap.clear();
     if (pagination) pagination.innerHTML = '';
     container.innerHTML = '<div class="p-8 text-center text-slate-400">Завантаження статей...</div>';
 
     try {
-        const res = await fetchPosts(page);
+        const res = await fetchPosts(page, query, request.signal);
         const json = await readResponse(res);
+        if (request.signal.aborted) return;
         const posts = json.data || [];
         currentPostsMap.clear();
         posts.forEach(p => currentPostsMap.set(p.id, p));
 
         if (posts.length === 0) {
-            container.innerHTML = '<div class="p-8 text-center text-slate-400 bg-white border border-slate-200 rounded-2xl">Статей поки немає. Створіть першу!</div>';
+            container.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white border border-slate-200 rounded-2xl">${query ? 'За цим заголовком статей не знайдено.' : 'Статей поки немає. Створіть першу!'}</div>`;
             if (pagination) pagination.innerHTML = '';
             return;
         }
@@ -109,11 +116,13 @@ export async function loadPosts(page = currentPostPage) {
             `;
         }
     } catch (err) {
+        if (request.signal.aborted) return;
         renderListError(container, err);
     }
 }
 
 export function initPosts(onEdit) {
+    document.getElementById('postSearch')?.addEventListener('input', () => loadPosts(1));
     document.addEventListener('click', async (event) => {
         const button = event.target.closest('[data-action]');
         if (!button || button.disabled) return;

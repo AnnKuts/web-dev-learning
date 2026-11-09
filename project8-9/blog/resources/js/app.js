@@ -7,18 +7,19 @@ import { initModals } from './ui.js';
 
 let currentTab = 'posts';
 
-function refreshCurrentTab() {
+function refreshCurrentTab(page) {
     const postPage = document.getElementById('postDetail');
     if (postPage) {
         loadPost(postPage.dataset.postId);
+        if (!document.getElementById('publishedPosts').classList.contains('hidden')) loadPosts(page);
         return;
     }
-    if (currentTab === 'posts') loadPosts();
+    if (currentTab === 'posts') loadPosts(page);
     if (currentTab === 'tags') loadTags();
     if (currentTab === 'users') loadUsers();
 }
 
-function switchTab(tab) {
+function switchTab(tab, page) {
     currentTab = tab;
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.className = 'tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition';
@@ -34,7 +35,7 @@ function switchTab(tab) {
         activeSection.classList.remove('hidden');
     }
 
-    refreshCurrentTab();
+    refreshCurrentTab(page);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,11 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshCurrentTab();
     });
     initPostForms(page => {
+        if (page === 1) document.getElementById('postSearch').value = '';
         if (document.getElementById('postDetail')) {
-            location.assign('/');
+            document.getElementById('publishedPosts').classList.remove('hidden');
+            refreshCurrentTab(page);
+            document.getElementById('publishedPosts').scrollIntoView({ behavior: 'smooth' });
             return;
         }
-        loadPosts(page);
+        switchTab('posts', page);
     });
     initPosts(startEditPost);
     initTags(refreshCurrentTab);
