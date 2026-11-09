@@ -60,19 +60,22 @@ JSON-відповідь формується у [`PostResource.php`](../../proje
 
 > Відкрийте вкладку Network браузера, переконайтеся, що запити до `api_list.php`/`api_add.php` мають тип `fetch`, а вкладка Elements показує, що DOM оновлюється без повторного завантаження документа.
 
-Перевірку виконано у Chrome DevTools. У вкладці **Network → Fetch/XHR** під час пошуку зафіксовано GET-запити до `/api/posts` із параметрами `page` та `q`, типом `fetch` і статусом `200 OK`. Список статей змінювався без перезавантаження сторінки.
+Перевірку виконано у Chrome DevTools. У вкладці Network під час пошуку зафіксовано GET-запити до `/api/posts` із параметрами `page` та `q`, типом `fetch` і статусом `200 OK`. Список статей змінювався без перезавантаження сторінки.
 
 <img width="2048" height="1140" alt="AJAX-пошук статей у вкладці Network" src="https://github.com/user-attachments/assets/6763d689-3a08-4747-9437-a08877b9d351" />
+
 *Перевірка AJAX-пошуку статей у Network*
 
 Під час публікації статті зафіксовано POST-запит до `/api/posts` зі статусом `201 Created`, після якого автоматично виконався GET-запит до `/api/posts?page=1` зі статусом `200 OK`. Обидва запити мали тип `fetch`, а нова стаття з'явилася першою в списку.
 
 <img width="3420" height="1904" alt="POST-запит і оновлення списку в Network" src="https://github.com/user-attachments/assets/be9d5e45-d095-48e0-831e-4eb8163e2da2" />
+
 *Публікація статті через AJAX та оновлення списку*
 
-У вкладці **Elements** перевірено контейнер `#postsList` та розміщені всередині елементи `<article>`, які JavaScript створює після отримання JSON-відповіді. Сторінка при пошуку та публікації не перезавантажувалася.
+У вкладці Elements перевірено контейнер `#postsList` та розміщені всередині елементи `<article>`, які JavaScript створює після отримання JSON-відповіді. Сторінка при пошуку та публікації не перезавантажувалася.
 
 <img width="2048" height="1140" alt="Контейнер postsList у вкладці Elements" src="https://github.com/user-attachments/assets/d70600ab-c639-4808-96ec-3959fe630259" />
+
 *Перевірка контейнера `#postsList` та карток статей у DOM*
 
 За результатами всі 18 PHP-тестів (`php artisan test`), 18 JavaScript-тестів (`npm test`) і production-збірки (`npm run build`) виконалися успішно. Тести знаходяться у [`tests/Feature/`](../../project8-9/blog/tests/Feature/) та [`tests/Frontend/blog.test.js`](../../project8-9/blog/tests/Frontend/blog.test.js).
