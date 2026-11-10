@@ -8,15 +8,15 @@
         <button type="button" data-tab="posts" id="tabBtn-posts" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-white text-slate-900 shadow-sm transition">
             Статті
         </button>
-        <button type="button" data-tab="tags" id="tabBtn-tags" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
+        <button type="button" data-tab="tags" id="tabBtn-tags" data-auth-required hidden class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
             Теги
         </button>
-        <button type="button" data-tab="users" id="tabBtn-users" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
+        <button type="button" data-tab="users" id="tabBtn-users" data-auth-required hidden class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
             Користувачі
         </button>
     </nav>
 
-    <div class="flex items-center space-x-2">
+    <div data-auth-required hidden class="flex items-center space-x-2">
         <button type="button" data-modal-open="newTagModal" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg transition shadow-2xs">
             <i class="fa-solid fa-plus mr-1" aria-hidden="true"></i> Новий тег
         </button>

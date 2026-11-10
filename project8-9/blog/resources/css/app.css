@@ -33,3 +33,7 @@
         @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600;
     }
 }
+
+[data-auth-required][hidden] {
+    display: none !important;
+}

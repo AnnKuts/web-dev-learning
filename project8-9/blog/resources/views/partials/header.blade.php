@@ -24,7 +24,7 @@
             <div id="userState" class="min-w-0 text-sm font-medium text-slate-600 flex items-center"></div>
         </div>
 
-        <button type="button" data-modal-open="newPostModal" class="w-full lg:w-auto mb-3 lg:mb-0 min-h-11 shrink-0 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-200 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 flex items-center justify-center space-x-2 whitespace-nowrap">
+        <button type="button" data-modal-open="newPostModal" data-auth-required hidden class="w-full lg:w-auto mb-3 lg:mb-0 min-h-11 shrink-0 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-200 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 flex items-center justify-center space-x-2 whitespace-nowrap">
             <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
             <span>Створити статтю</span>
         </button>

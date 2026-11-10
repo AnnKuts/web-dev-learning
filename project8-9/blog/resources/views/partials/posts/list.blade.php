@@ -1,4 +1,4 @@
-<div class="mb-6">
+<div data-auth-required hidden class="mb-6">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
         <label for="postSearch" class="text-sm font-medium text-slate-700">Пошук за заголовком</label>
         <div id="postTagFilter" class="hidden flex min-w-0 max-w-full items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 pl-3 pr-1 py-1 text-indigo-700">

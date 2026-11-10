@@ -8,6 +8,14 @@ import { getAuthToken, getCurrentUser } from './api.js';
 
 let currentTab = 'posts';
 
+function syncAuthControls() {
+    const authenticated = Boolean(getAuthToken());
+    document.querySelectorAll('[data-auth-required]').forEach(control => {
+        control.hidden = !authenticated;
+    });
+    if (!authenticated && currentTab !== 'posts') switchTab('posts');
+}
+
 function refreshCurrentTab(page) {
     if (!getAuthToken()) {
         renderGuestState(document.getElementById('postsList'));
@@ -57,11 +65,14 @@ function switchTab(tab, page) {
 document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('auth:expired', () => {
         renderUserState(getCurrentUser(), getAuthToken());
+        syncAuthControls();
         refreshCurrentTab();
     });
+    syncAuthControls();
     initHeaderMenu();
     initModals();
     initAuth(() => {
+        syncAuthControls();
         if (getAuthToken()) loadTagsForSelects();
         refreshCurrentTab();
     });
