@@ -89,8 +89,25 @@ test('comment cards render accessible icon action buttons only for authorized co
     expect(otherCard.querySelector('[data-comment-action="edit"]')).toBeNull();
     expect(otherCard.querySelector('[data-comment-action="delete"]')).toBeNull();
 
-    // Edit action updates comment
+    // Clicking edit opens an inline textarea pre-filled with the comment's existing text (no browser prompt)
     editBtn.click();
+    const editForm = document.querySelector('[data-comment-id="10"] [data-comment-edit-form]');
+    const editInput = document.querySelector('[data-comment-id="10"] [data-comment-edit-input]');
+    expect(editForm).not.toBeNull();
+    expect(editInput).not.toBeNull();
+    expect(editInput.value).toBe('Мій власний коментар');
+
+    // Clicking cancel restores the original comment view without calling PUT
+    document.querySelector('[data-comment-id="10"] [data-comment-action="cancel-edit"]').click();
+    expect(document.querySelector('[data-comment-id="10"] [data-comment-edit-form]')).toBeNull();
+    expect(document.querySelector('[data-comment-id="10"] [data-comment-body]').textContent).toBe('Мій власний коментар');
+
+    // Reopen inline editor, modify text, and submit form to update comment
+    document.querySelector('[data-comment-id="10"] [data-comment-action="edit"]').click();
+    const reopenedInput = document.querySelector('[data-comment-id="10"] [data-comment-edit-input]');
+    reopenedInput.value = 'Оновлений коментар';
+    document.querySelector('[data-comment-id="10"] [data-comment-edit-form]').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
     await vi.waitFor(() => expect(document.querySelector('[data-comment-id="10"]').textContent).toContain('Оновлений коментар'));
     expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({
         method: 'PUT',
