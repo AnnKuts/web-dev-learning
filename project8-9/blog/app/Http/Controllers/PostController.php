@@ -35,6 +35,13 @@ class PostController extends Controller
         ]);
     }
 
+    public function recent(Request $request)
+    {
+        $this->authorize('viewAny', Post::class);
+        $limit = $request->validate(['limit' => 'nullable|integer|between:1,100'])['limit'] ?? 10;
+        return PostResource::collection($this->postService->listRecent((int) $limit));
+    }
+
     public function show(Post $post)
     {
         $this->authorize('view', $post);
