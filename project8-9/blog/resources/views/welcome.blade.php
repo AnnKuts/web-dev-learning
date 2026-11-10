@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-    <nav class="flex space-x-2 bg-slate-200/70 p-1 rounded-xl w-fit">
+    <nav data-auth-required hidden class="flex space-x-2 bg-slate-200/70 p-1 rounded-xl w-fit">
         <button type="button" data-tab="posts" id="tabBtn-posts" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-white text-slate-900 shadow-sm transition">
             Статті
         </button>
-        <button type="button" data-tab="tags" id="tabBtn-tags" data-auth-required hidden class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
+        <button type="button" data-tab="tags" id="tabBtn-tags" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
             Теги
         </button>
-        <button type="button" data-tab="users" id="tabBtn-users" data-auth-required hidden class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
+        <button type="button" data-tab="users" id="tabBtn-users" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 transition">
             Користувачі
         </button>
     </nav>

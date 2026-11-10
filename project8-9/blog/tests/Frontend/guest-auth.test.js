@@ -7,9 +7,11 @@ test('guest first load, email login, logout, and expired token keep protected re
     document.body.innerHTML = `
         <div id="toast"><span id="toastIcon"></span><span id="toastMessage"></span></div>
         <div id="userState"></div>
-        <button id="tabBtn-posts" data-tab="posts" class="tab-btn"></button>
-        <button id="tabBtn-tags" data-tab="tags" data-auth-required hidden class="tab-btn"></button>
-        <button id="tabBtn-users" data-tab="users" data-auth-required hidden class="tab-btn"></button>
+        <nav id="mainTabs" data-auth-required hidden>
+            <button id="tabBtn-posts" data-tab="posts" class="tab-btn"></button>
+            <button id="tabBtn-tags" data-tab="tags" class="tab-btn"></button>
+            <button id="tabBtn-users" data-tab="users" class="tab-btn"></button>
+        </nav>
         <div id="tab-posts" class="tab-content"></div>
         <div id="tab-tags" class="tab-content hidden"></div>
         <div id="tab-users" class="tab-content hidden"></div>
@@ -42,6 +44,7 @@ test('guest first load, email login, logout, and expired token keep protected re
     await import('../../resources/js/app.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     expect(protectedCalls).toBe(0);
+    expect(document.getElementById('mainTabs').hidden).toBe(true);
     for (const control of document.querySelectorAll('[data-auth-required]')) expect(control.hidden).toBe(true);
     expect(document.getElementById('postsList').textContent).toContain('Ласкаво просимо');
     expect(document.querySelector('#postsList [data-modal-open="loginModal"]')).not.toBeNull();
@@ -50,6 +53,7 @@ test('guest first load, email login, logout, and expired token keep protected re
     document.getElementById('loginForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(protectedCalls).toBeGreaterThan(0));
     expect(getAuthToken()).toBe('valid-token');
+    expect(document.getElementById('mainTabs').hidden).toBe(false);
     for (const control of document.querySelectorAll('[data-auth-required]')) expect(control.hidden).toBe(false);
     await vi.waitFor(() => expect(document.getElementById('postsList').textContent).toContain('Статей поки немає'));
 

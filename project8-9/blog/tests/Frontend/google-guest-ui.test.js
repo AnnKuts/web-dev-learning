@@ -10,7 +10,7 @@ test('Google exchange restores controls and loads articles from the guest page',
         <div id="toast"><span id="toastIcon"></span><span id="toastMessage"></span></div>
         <div id="userState"></div>
         <button id="createArticleBtn" data-auth-required hidden data-modal-open="newPostModal"></button>
-        <button id="tabBtn-tags" data-auth-required hidden></button>
+        <nav id="mainTabs" data-auth-required hidden><button id="tabBtn-posts"></button><button id="tabBtn-tags"></button></nav>
         <div id="articleSearch" data-auth-required hidden><input id="postSearch"></div>
         <div id="postsList"></div><div id="postsPagination"></div>
         <div id="tagsList"></div><div id="usersList"></div><div id="usersPagination"></div>
@@ -25,6 +25,7 @@ test('Google exchange restores controls and loads articles from the guest page',
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await vi.waitFor(() => expect(getAuthToken()).toBe('google-token'));
     for (const control of document.querySelectorAll('[data-auth-required]')) expect(control.hidden).toBe(false);
+    expect(document.getElementById('mainTabs').hidden).toBe(false);
     await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.startsWith('/api/posts?'))).toBe(true));
     expect(location.hash).toBe('');
     vi.unstubAllGlobals();
