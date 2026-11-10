@@ -31,7 +31,9 @@ class PostPerformanceTest extends TestCase
         $user = User::factory()->create();
         Post::factory()->count(15)->create(['user_id' => $user->id]);
         $queries = 0;
-        DB::listen(function () use (&$queries): void { $queries++; });
+        DB::listen(function () use (&$queries): void {
+            $queries++;
+        });
         $this->actingAs($user)->getJson('/api/posts')->assertOk()->assertJsonCount(15, 'data');
         $this->assertLessThanOrEqual(5, $queries);
     }

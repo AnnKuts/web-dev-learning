@@ -18,7 +18,9 @@ class ProfilePostListing
 
         $start = microtime(true);
         $queries = 0;
-        DB::listen(function () use (&$queries): void { $queries++; });
+        DB::listen(function () use (&$queries): void {
+            $queries++;
+        });
         $response = $next($request);
         Log::info('post_listing_profile', [
             'elapsed_ms' => round((microtime(true) - $start) * 1000, 3),

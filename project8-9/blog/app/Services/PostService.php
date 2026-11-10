@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
-
 use Illuminate\Support\Facades\DB;
 
 class PostService
@@ -16,11 +15,12 @@ class PostService
 
             $post = Post::create($data);
 
-            if (!empty($tagIds)) {
+            if (! empty($tagIds)) {
                 $post->tags()->sync($tagIds);
             }
 
             $this->invalidateRecent();
+
             return $post->load('tags');
         });
     }
@@ -36,6 +36,7 @@ class PostService
             }
 
             $this->invalidateRecent();
+
             return $post->load('tags');
         });
     }
@@ -45,14 +46,14 @@ class PostService
         $post->delete();
         $this->invalidateRecent();
     }
+
     public function listRecent(int $limit): Collection
     {
         if ($limit < 1 || $limit > 100) {
             throw new \InvalidArgumentException('Limit must be between 1 and 100.');
         }
 
-        return Cache::remember("recent_posts:{$limit}", 45, fn () =>
-            Post::with(['user', 'tags'])->latest()->orderByDesc('id')->limit($limit)->get()
+        return Cache::remember("recent_posts:{$limit}", 45, fn () => Post::with(['user', 'tags'])->latest()->orderByDesc('id')->limit($limit)->get()
         );
     }
 
