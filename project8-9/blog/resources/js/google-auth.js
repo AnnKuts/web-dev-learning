@@ -22,13 +22,13 @@ export async function finishGoogleLogin(onSuccess) {
     try {
         if (params.has('google_code')) {
             const result = await post('/auth/google/exchange', { code: params.get('google_code') });
-            setAuth(result.token, result.user ? { google_linked: true, ...result.user } : result.user);
+            setAuth(result.token, result.user ? { google_connected: true, google_linked: true, ...result.user } : result.user);
             onSuccess();
             showToast('Успішний вхід через Google!');
         } else if (params.get('google_status') === 'linked') {
             const current = getCurrentUser();
             if (current && getAuthToken()) {
-                setAuth(getAuthToken(), { ...current, google_linked: true });
+                setAuth(getAuthToken(), { ...current, google_connected: true, google_linked: true });
                 onSuccess?.();
             }
             showToast('Google підключено до вашого акаунту.');

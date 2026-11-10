@@ -139,11 +139,11 @@ export async function loadPosts(page = currentPostPage) {
                     </div>
 
                     <div class="flex items-center space-x-2 shrink-0">
-                        <button type="button" data-action="edit-post" data-id="${post.id}" class="p-2 text-slate-400 hover:text-indigo-600 transition" title="Редагувати">
-                            <i class="fa-solid fa-pen-to-square"></i>
+                        <button type="button" data-action="edit-post" data-id="${post.id}" aria-label="Редагувати статтю" class="action-icon-btn action-icon-btn-edit inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition cursor-pointer" title="Редагувати">
+                            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                         </button>
-                        <button type="button" data-action="delete-post" data-id="${post.id}" class="p-2 text-slate-400 hover:text-rose-600 transition" title="Видалити">
-                            <i class="fa-solid fa-trash-can"></i>
+                        <button type="button" data-action="delete-post" data-id="${post.id}" aria-label="Видалити статтю" class="action-icon-btn action-icon-btn-delete inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 transition cursor-pointer" title="Видалити">
+                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>

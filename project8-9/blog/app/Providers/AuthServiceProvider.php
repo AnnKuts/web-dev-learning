@@ -34,6 +34,9 @@ class AuthServiceProvider extends ServiceProvider
             if ($ability === 'delete' && ($arguments[0] ?? null) instanceof Tag) {
                 return null;
             }
+            if (in_array($ability, ['update', 'delete', 'restore', 'forceDelete'], true) && ($arguments[0] ?? null) instanceof User) {
+                return null;
+            }
             if (app()->isLocal() && filter_var(config('auth.dev_bypass', false), FILTER_VALIDATE_BOOLEAN)) {
                 return true;
             }

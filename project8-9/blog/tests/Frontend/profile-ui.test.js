@@ -43,17 +43,20 @@ function buildHeaderAndModalsDom() {
 
         <div id="profileSettingsModal" role="dialog" aria-modal="true" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center">
             <div>
-                <img id="profileSettingsAvatarImg" class="hidden">
-                <div id="profileSettingsAvatarFallback">U</div>
-                <p id="profileSettingsUsername"></p>
-                <p id="profileSettingsEmail"></p>
-                <p id="profileSettingsBio" class="hidden"></p>
-                <p id="profileSettingsAvatarStatus"></p>
-                <button type="button" id="profileOpenAvatarBtn" data-modal-close="profileSettingsModal" data-modal-open="avatarModal">Змінити фотографію</button>
-                <span id="profileSettingsGoogleBadge" class="hidden">Підключено</span>
-                <p id="profileSettingsGoogleText"></p>
-                <button type="button" id="profileSettingsGoogleLinkBtn" data-modal-close="profileSettingsModal" data-modal-open="googleLinkModal">Підключити Google</button>
-                <button type="button" data-modal-close="profileSettingsModal">Закрити</button>
+                <h2 id="profileSettingsTitle">Налаштування профілю</h2>
+                <p>Керування вашим обліковим записом</p>
+                <form id="profileSettingsForm" novalidate>
+                    <input type="text" id="profileUsername" name="username" required minlength="2" maxlength="255">
+                    <p id="profileUsernameError" class="hidden"></p>
+                    <input type="email" id="profileEmail" name="email" readonly aria-readonly="true">
+                    <textarea id="profileBio" name="user_bio" rows="3" maxlength="1000"></textarea>
+                    <p id="profileBioError" class="hidden"></p>
+                    <span id="profileSettingsGoogleBadge" class="hidden">Підключено</span>
+                    <span id="profileSettingsGoogleUnlinked">Не підключено</span>
+                    <p id="profileFormError" role="alert" class="hidden"></p>
+                    <button type="button" data-modal-close="profileSettingsModal">Скасувати</button>
+                    <button type="submit" id="profileSaveBtn"><span>Зберегти зміни</span></button>
+                </form>
             </div>
         </div>
 
@@ -98,7 +101,7 @@ test('guest vs authenticated header renders compact avatar button and keeps crea
     expect(document.getElementById('headerMenuToggle').classList.contains('hidden')).toBe(false);
     expect(document.getElementById('headerMenu').classList.contains('hidden')).toBe(true);
 
-    const user = { username: 'Anna Kuts', email: 'anna@example.com', avatar_url: null, google_linked: false };
+    const user = { id: 1, username: 'Anna Kuts', email: 'anna@example.com', avatar_url: null, google_connected: false };
     setAuth('token-123', user);
     renderUserState(user, 'token-123');
 
@@ -130,8 +133,7 @@ test('guest vs authenticated header renders compact avatar button and keeps crea
 });
 
 test('dropdown opens, closes on outside click or Escape, supports keyboard navigation, and avoids duplicate listeners', () => {
-    const user = { username: 'Anna', email: 'anna@example.com', avatar_url: 'https://example.com/a.webp' };
-    // Call renderUserState multiple times to ensure listeners are never duplicated
+    const user = { id: 1, username: 'Anna', email: 'anna@example.com', avatar_url: 'https://example.com/a.webp' };
     renderUserState(user, 'token-1');
     renderUserState(user, 'token-1');
     renderUserState(user, 'token-1');
@@ -170,13 +172,14 @@ test('dropdown opens, closes on outside click or Escape, supports keyboard navig
     expect(document.activeElement).toBe(menuBtn);
 });
 
-test('profile settings and Google linking modals open from dropdown and reflect Google linking status', () => {
+test('profile settings modal populates fields, validates and saves username/biography updates, and reflects Google connection status without duplication', async () => {
     const unlinkedUser = {
+        id: 7,
         username: 'Anna',
         email: 'anna@example.com',
         user_bio: 'PHP & Laravel developer',
         avatar_url: null,
-        google_linked: false,
+        google_connected: false,
     };
     setAuth('token-1', unlinkedUser);
     renderUserState(unlinkedUser, 'token-1');
@@ -184,7 +187,7 @@ test('profile settings and Google linking modals open from dropdown and reflect 
     const menuBtn = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userDropdownMenu');
 
-    // Google link button is shown in dropdown when not linked
+    // Google link button is shown in dropdown when not connected
     expect(document.getElementById('googleLinkMenuBtn')).not.toBeNull();
 
     // Open dropdown and click Profile Settings
@@ -194,37 +197,73 @@ test('profile settings and Google linking modals open from dropdown and reflect 
     expect(dropdown.classList.contains('hidden')).toBe(true);
     const profileModal = document.getElementById('profileSettingsModal');
     expect(profileModal.classList.contains('hidden')).toBe(false);
-    expect(document.getElementById('profileSettingsUsername').textContent).toBe('Anna');
-    expect(document.getElementById('profileSettingsEmail').textContent).toBe('anna@example.com');
-    expect(document.getElementById('profileSettingsBio').textContent).toBe('PHP & Laravel developer');
+    expect(document.getElementById('profileUsername').value).toBe('Anna');
+    expect(document.getElementById('profileEmail').value).toBe('anna@example.com');
+    expect(document.getElementById('profileEmail').readOnly).toBe(true);
+    expect(document.getElementById('profileBio').value).toBe('PHP & Laravel developer');
     expect(document.getElementById('profileSettingsGoogleBadge').classList.contains('hidden')).toBe(true);
-    expect(document.getElementById('profileSettingsGoogleLinkBtn').classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('profileSettingsGoogleUnlinked').classList.contains('hidden')).toBe(false);
 
-    // Clicking "Підключити Google" inside Profile Settings closes profile modal and opens googleLinkModal
-    document.getElementById('profileSettingsGoogleLinkBtn').click();
-    expect(profileModal.classList.contains('hidden')).toBe(true);
-    expect(document.getElementById('googleLinkModal').classList.contains('hidden')).toBe(false);
+    // Ensure profile settings modal does not duplicate avatar upload or Google link buttons
+    expect(profileModal.querySelector('[data-modal-open="avatarModal"]')).toBeNull();
+    expect(profileModal.querySelector('[data-modal-open="googleLinkModal"]')).toBeNull();
 
-    // Close googleLinkModal and open it directly from dropdown
-    document.querySelector('[data-modal-close="googleLinkModal"]').click();
-    expect(document.getElementById('googleLinkModal').classList.contains('hidden')).toBe(true);
+    // Client-side validation rejects too-short username
+    document.getElementById('profileUsername').value = 'A';
+    document.getElementById('profileSettingsForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(document.getElementById('profileUsernameError').classList.contains('hidden')).toBe(false);
 
-    menuBtn.click();
-    document.getElementById('googleLinkMenuBtn').click();
-    expect(dropdown.classList.contains('hidden')).toBe(true);
-    expect(document.getElementById('googleLinkModal').classList.contains('hidden')).toBe(false);
+    // Server-side validation error (422) displays field error message
+    const fetchMock = vi.fn(async (url, options) => {
+        const body = JSON.parse(options.body);
+        if (body.username === 'TakenName') {
+            return Response.json({
+                message: 'The username has already been taken.',
+                errors: { username: ['Це ім’я користувача вже зайняте.'] },
+            }, { status: 422 });
+        }
+        return Response.json({
+            data: {
+                id: 7,
+                username: body.username,
+                email: 'anna@example.com',
+                user_bio: body.user_bio || null,
+                avatar_url: null,
+                google_connected: true,
+            },
+        });
+    });
+    vi.stubGlobal('fetch', fetchMock);
 
-    // When Google is already linked, dropdown hides the link option and profile settings shows "Підключено"
-    const linkedUser = { ...unlinkedUser, google_linked: true };
-    setAuth('token-1', linkedUser);
-    renderUserState(linkedUser, 'token-1');
+    document.getElementById('profileUsername').value = 'TakenName';
+    document.getElementById('profileSettingsForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.getElementById('profileUsernameError').textContent).toBe('Це ім’я користувача вже зайняте.'));
+    expect(profileModal.classList.contains('hidden')).toBe(false);
+
+    // Valid update saves via PUT /api/users/7 and immediately refreshes header, dropdown, and Google status
+    document.getElementById('profileUsername').value = 'KutsAnna';
+    document.getElementById('profileBio').value = 'Updated biography text';
+    document.getElementById('profileSettingsForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => expect(profileModal.classList.contains('hidden')).toBe(true));
+    expect(fetchMock).toHaveBeenCalledWith('/api/users/7', expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ username: 'KutsAnna', user_bio: 'Updated biography text' }),
+    }));
+
+    expect(getCurrentUser().username).toBe('KutsAnna');
+    expect(getCurrentUser().user_bio).toBe('Updated biography text');
+    expect(document.getElementById('userDropdownName').textContent).toBe('KutsAnna');
+    expect(document.getElementById('headerUserAvatarFallback').textContent).toBe('K');
+
+    // Because updated response has google_connected: true, dropdown hides "Підключити Google" and modal shows "Підключено"
     expect(document.getElementById('googleLinkMenuBtn')).toBeNull();
     expect(document.getElementById('profileSettingsGoogleBadge').classList.contains('hidden')).toBe(false);
-    expect(document.getElementById('profileSettingsGoogleLinkBtn').classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('profileSettingsGoogleUnlinked').classList.contains('hidden')).toBe(true);
 });
 
 test('avatar modal centers properly, previews selected image, validates input, and updates header on upload and delete', async () => {
-    const initialUser = { username: 'Anna', email: 'anna@example.com', avatar_url: null };
+    const initialUser = { id: 1, username: 'Anna', email: 'anna@example.com', avatar_url: null };
     setAuth('token-1', initialUser);
     renderUserState(initialUser, 'token-1');
     initAvatar();
@@ -269,6 +308,7 @@ test('avatar modal centers properly, previews selected image, validates input, a
         if (url === '/api/me/avatar' && options.method === 'POST') {
             return Response.json({
                 data: {
+                    id: 1,
                     username: 'Anna',
                     email: 'anna@example.com',
                     avatar_url: 'https://cdn.example.com/avatars/new.webp',
@@ -278,6 +318,7 @@ test('avatar modal centers properly, previews selected image, validates input, a
         if (url === '/api/me/avatar' && options.method === 'DELETE') {
             return Response.json({
                 data: {
+                    id: 1,
                     username: 'Anna',
                     email: 'anna@example.com',
                     avatar_url: null,
@@ -312,7 +353,7 @@ test('avatar modal centers properly, previews selected image, validates input, a
 });
 
 test('logout through the dropdown clears auth state and removes the profile menu', async () => {
-    setAuth('token-xyz', { username: 'Anna', email: 'anna@example.com', avatar_url: null });
+    setAuth('token-xyz', { id: 1, username: 'Anna', email: 'anna@example.com', avatar_url: null });
     vi.stubGlobal('fetch', vi.fn(async (url) => {
         if (url === '/api/logout') return Response.json({ message: 'Logged out' });
         return Response.json({});

@@ -1,13 +1,22 @@
-import { test, expect, vi } from 'vitest';
+import { beforeEach, afterEach, test, expect, vi } from 'vitest';
 import { setAuth, clearAuth } from '../../resources/js/api.js';
 import { initComments, loadComments } from '../../resources/js/comments.js';
 
-test('new comment appears without reloading and user text is escaped', async () => {
+beforeEach(() => {
     setAuth('test-token', { id: 1, username: 'Anna' });
     document.body.innerHTML = `
         <form id="commentForm"><textarea id="commentContent"></textarea><button type="submit">Опублікувати</button></form>
         <div id="commentsList"></div><button id="commentsMore" class="hidden"></button>
         <div id="toast"><span id="toastIcon"></span><span id="toastMessage"></span></div>`;
+});
+
+afterEach(() => {
+    clearAuth();
+    vi.unstubAllGlobals();
+    document.body.replaceChildren();
+});
+
+test('new comment appears without reloading and user text is escaped', async () => {
     const created = { id: 2, content: '<script>bad()</script>', author: { username: 'Anna', avatar_url: null }, created_at: '2026-11-11T12:00:00Z', can_edit: true };
     vi.stubGlobal('fetch', vi.fn(async (_, options) => options?.method === 'POST'
         ? Response.json({ data: created }, { status: 201 })
@@ -21,8 +30,76 @@ test('new comment appears without reloading and user text is escaped', async () 
     expect(document.querySelector('#commentsList script')).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(document.getElementById('commentContent').value).toBe('');
+});
 
-    clearAuth();
-    vi.unstubAllGlobals();
-    document.body.replaceChildren();
+test('comment cards render accessible icon action buttons only for authorized comments and support edit and delete', async () => {
+    let items = [
+        {
+            id: 10,
+            content: 'Мій власний коментар',
+            author: { username: 'Anna', avatar_url: null },
+            created_at: '2026-11-11T12:00:00Z',
+            can_edit: true,
+        },
+        {
+            id: 11,
+            content: 'Чужий коментар',
+            author: { username: 'OtherUser', avatar_url: 'https://example.com/u.webp' },
+            created_at: '2026-11-11T12:05:00Z',
+            can_edit: false,
+        },
+    ];
+
+    const fetchMock = vi.fn(async (url, options) => {
+        if (options?.method === 'PUT') {
+            const body = JSON.parse(options.body);
+            items[0] = { ...items[0], content: body.content };
+            return Response.json({ data: items[0] });
+        }
+        if (options?.method === 'DELETE') {
+            items = items.filter(c => c.id !== 10);
+            return new Response(null, { status: 204 });
+        }
+        return Response.json({ data: items, meta: { last_page: 1 } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('prompt', vi.fn(() => 'Оновлений коментар'));
+    vi.stubGlobal('confirm', vi.fn(() => true));
+
+    initComments();
+    await loadComments(5);
+
+    const ownCard = document.querySelector('[data-comment-id="10"]');
+    const otherCard = document.querySelector('[data-comment-id="11"]');
+
+    // Own comment has accessible icon buttons matching article action pattern
+    const editBtn = ownCard.querySelector('[data-comment-action="edit"]');
+    const deleteBtn = ownCard.querySelector('[data-comment-action="delete"]');
+    expect(editBtn).not.toBeNull();
+    expect(deleteBtn).not.toBeNull();
+    expect(editBtn.getAttribute('aria-label')).toBe('Редагувати коментар');
+    expect(deleteBtn.getAttribute('aria-label')).toBe('Видалити коментар');
+    expect(editBtn.querySelector('.fa-pen-to-square')).not.toBeNull();
+    expect(deleteBtn.querySelector('.fa-trash-can')).not.toBeNull();
+    expect(editBtn.className).toContain('action-icon-btn');
+    expect(deleteBtn.className).toContain('action-icon-btn');
+
+    // Unauthorized comment hides edit and delete controls completely
+    expect(otherCard.querySelector('[data-comment-action="edit"]')).toBeNull();
+    expect(otherCard.querySelector('[data-comment-action="delete"]')).toBeNull();
+
+    // Edit action updates comment
+    editBtn.click();
+    await vi.waitFor(() => expect(document.querySelector('[data-comment-id="10"]').textContent).toContain('Оновлений коментар'));
+    expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ content: 'Оновлений коментар' }),
+    }));
+
+    // Delete action removes comment
+    document.querySelector('[data-comment-id="10"] [data-comment-action="delete"]').click();
+    await vi.waitFor(() => expect(document.querySelector('[data-comment-id="10"]')).toBeNull());
+    expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({
+        method: 'DELETE',
+    }));
 });

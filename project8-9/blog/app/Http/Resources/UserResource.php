@@ -9,16 +9,17 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $includeAuthStatus = $request->user()?->is($this->resource)
+            || $request->is('api/login', 'api/register', 'auth/google/*', 'api/me/*');
+
         return [
             'id' => $this->id,
             'username' => $this->username,
             'avatar_url' => $this->avatar_url,
             'email' => $this->email,
             'user_bio' => $this->user_bio,
-            'google_linked' => $this->when(
-                $request->user()?->is($this->resource) || $request->is('api/login', 'api/register', 'auth/google/*', 'api/me/*'),
-                fn () => (bool) $this->google_id
-            ),
+            'google_connected' => $this->when($includeAuthStatus, fn () => (bool) $this->google_id),
+            'google_linked' => $this->when($includeAuthStatus, fn () => (bool) $this->google_id),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'posts_count' => $this->whenLoaded('posts', function () {

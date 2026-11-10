@@ -2,21 +2,49 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $target = $this->route('user');
+
+        return $target instanceof User
+            && $this->user() !== null
+            && $this->user()->can('update', $target);
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('username') && is_string($this->input('username'))) {
+            $this->merge([
+                'username' => trim($this->input('username')),
+            ]);
+        }
     }
 
     public function rules(): array
     {
+        $userId = $this->route('user')?->id;
+
         return [
-            'user_bio' => 'required|string|max:1000',
-            'username' => 'sometimes|string|max:255|unique:users,username,' . $this->route('user')->id,
-            'email' => 'sometimes|email|max:255|unique:users,email,' . $this->route('user')->id,
+            'username' => [
+                'sometimes',
+                'required',
+                'string',
+                'min:2',
+                'max:255',
+                Rule::unique('users', 'username')->ignore($userId),
+            ],
+            'user_bio' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ];
     }
 }

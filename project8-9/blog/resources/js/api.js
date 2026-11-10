@@ -110,6 +110,15 @@ export async function fetchUsers(page = 1) {
     return fetch(`/api/users?page=${page}`, { headers: getHeaders() });
 }
 
+export async function updateUserProfile(id, data) {
+    const targetId = id ?? currentUser?.id;
+    return fetch(`/api/users/${targetId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
 export async function loginUser(data) {
     return fetch('/api/login', {
         method: 'POST',

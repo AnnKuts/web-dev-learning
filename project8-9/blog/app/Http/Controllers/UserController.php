@@ -30,10 +30,7 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
         $validated = $request->validated();
-        $updatedUser = $this->userService->updateBio(
-            $user,
-            $validated['user_bio']
-        );
+        $updatedUser = $this->userService->updateProfile($user, $validated);
         return (new UserResource($updatedUser))->response();
     }
 

@@ -1,4 +1,4 @@
-import { getCurrentUser } from './api.js';
+import { getAuthToken, getCurrentUser, setAuth, updateUserProfile, readResponse } from './api.js';
 
 let globalUiListenersBound = false;
 let matchMediaBound = false;
@@ -36,6 +36,23 @@ export function escapeHtml(text) {
 export function getUserInitial(user) {
     const source = (user?.username || user?.email || 'U').trim();
     return (source[0] || 'U').toUpperCase();
+}
+
+export function isGoogleConnected(user) {
+    return Boolean(user?.google_connected ?? user?.google_linked);
+}
+
+function setFieldError(id, message = '') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('hidden', !message);
+}
+
+function clearProfileErrors() {
+    setFieldError('profileUsernameError', '');
+    setFieldError('profileBioError', '');
+    setFieldError('profileFormError', '');
 }
 
 export function syncAvatarModal(user = getCurrentUser(), resetInput = false) {
@@ -87,57 +104,24 @@ export function syncAvatarModal(user = getCurrentUser(), resetInput = false) {
     }
 }
 
-export function syncProfileSettingsModal(user = getCurrentUser()) {
-    const usernameEl = document.getElementById('profileSettingsUsername');
-    const emailEl = document.getElementById('profileSettingsEmail');
-    const bioEl = document.getElementById('profileSettingsBio');
-    const avatarImg = document.getElementById('profileSettingsAvatarImg');
-    const avatarFallback = document.getElementById('profileSettingsAvatarFallback');
-    const avatarStatus = document.getElementById('profileSettingsAvatarStatus');
+export function syncProfileSettingsModal(user = getCurrentUser(), resetErrors = false) {
+    const usernameInput = document.getElementById('profileUsername');
+    const emailInput = document.getElementById('profileEmail');
+    const bioInput = document.getElementById('profileBio');
     const googleBadge = document.getElementById('profileSettingsGoogleBadge');
-    const googleLinkBtn = document.getElementById('profileSettingsGoogleLinkBtn');
-    const googleText = document.getElementById('profileSettingsGoogleText');
+    const googleUnlinked = document.getElementById('profileSettingsGoogleUnlinked');
 
-    if (usernameEl) usernameEl.textContent = user?.username || 'Користувач';
-    if (emailEl) emailEl.textContent = user?.email || 'Email не вказано';
+    if (usernameInput) usernameInput.value = user?.username || '';
+    if (emailInput) emailInput.value = user?.email || '';
+    if (bioInput) bioInput.value = user?.user_bio || '';
 
-    if (bioEl) {
-        if (user?.user_bio) {
-            bioEl.textContent = user.user_bio;
-            bioEl.classList.remove('hidden');
-        } else {
-            bioEl.textContent = '';
-            bioEl.classList.add('hidden');
-        }
+    if (resetErrors) {
+        clearProfileErrors();
     }
 
-    if (user?.avatar_url) {
-        if (avatarImg) {
-            avatarImg.src = user.avatar_url;
-            avatarImg.classList.remove('hidden');
-        }
-        avatarFallback?.classList.add('hidden');
-        if (avatarStatus) avatarStatus.textContent = 'Встановлено власне фото профілю';
-    } else {
-        if (avatarImg) {
-            avatarImg.removeAttribute('src');
-            avatarImg.classList.add('hidden');
-        }
-        if (avatarFallback) {
-            avatarFallback.textContent = getUserInitial(user);
-            avatarFallback.classList.remove('hidden');
-        }
-        if (avatarStatus) avatarStatus.textContent = 'JPEG, PNG або WebP до 2 МБ';
-    }
-
-    const googleLinked = Boolean(user?.google_linked);
-    googleBadge?.classList.toggle('hidden', !googleLinked);
-    googleLinkBtn?.classList.toggle('hidden', googleLinked);
-    if (googleText) {
-        googleText.textContent = googleLinked
-            ? 'Ваш акаунт пов’язано з Google'
-            : 'Швидкий вхід через Google';
-    }
+    const googleConnected = isGoogleConnected(user);
+    googleBadge?.classList.toggle('hidden', !googleConnected);
+    googleUnlinked?.classList.toggle('hidden', googleConnected);
 }
 
 export function setUserDropdownOpen(open) {
@@ -173,7 +157,7 @@ export function openModal(id) {
     if (id === 'avatarModal') {
         syncAvatarModal(getCurrentUser(), true);
     } else if (id === 'profileSettingsModal') {
-        syncProfileSettingsModal(getCurrentUser());
+        syncProfileSettingsModal(getCurrentUser(), true);
     }
     const el = document.getElementById(id);
     if (el) {
@@ -191,6 +175,66 @@ export function closeModal(id) {
     }
     if (id === 'avatarModal') {
         syncAvatarModal(getCurrentUser(), true);
+    } else if (id === 'profileSettingsModal') {
+        syncProfileSettingsModal(getCurrentUser(), true);
+    }
+}
+
+function setProfileSaveButtonLoading(button, loading) {
+    if (!button) return;
+    button.disabled = loading;
+    const span = button.querySelector('span');
+    if (span) {
+        span.textContent = loading ? 'Збереження...' : 'Зберегти зміни';
+    } else {
+        button.textContent = loading ? 'Збереження...' : 'Зберегти зміни';
+    }
+}
+
+async function handleProfileFormSubmit(event) {
+    event.preventDefault();
+    clearProfileErrors();
+
+    const usernameInput = document.getElementById('profileUsername');
+    const bioInput = document.getElementById('profileBio');
+    const saveBtn = document.getElementById('profileSaveBtn') || event.target.querySelector('[type="submit"]');
+
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const user_bio = bioInput ? bioInput.value.trim() : '';
+
+    if (username.length < 2 || username.length > 255) {
+        setFieldError('profileUsernameError', 'Ім’я користувача має містити від 2 до 255 символів.');
+        return;
+    }
+
+    if (user_bio.length > 1000) {
+        setFieldError('profileBioError', 'Біографія не може перевищувати 1000 символів.');
+        return;
+    }
+
+    setProfileSaveButtonLoading(saveBtn, true);
+
+    try {
+        const current = getCurrentUser();
+        const response = await updateUserProfile(current?.id, { username, user_bio });
+        const payload = await readResponse(response);
+        const updatedUser = payload.data || payload.user || payload;
+
+        setAuth(getAuthToken(), { ...current, ...updatedUser });
+        renderUserState(getCurrentUser(), getAuthToken());
+        closeModal('profileSettingsModal');
+        showToast('Профіль оновлено');
+    } catch (error) {
+        const usernameErr = error.errors?.username?.[0];
+        const bioErr = error.errors?.user_bio?.[0];
+        if (usernameErr) setFieldError('profileUsernameError', usernameErr);
+        if (bioErr) setFieldError('profileBioError', bioErr);
+        if (!usernameErr && !bioErr) {
+            setFieldError('profileFormError', error.message);
+        }
+        showToast(usernameErr || bioErr || error.message, true);
+    } finally {
+        setProfileSaveButtonLoading(saveBtn, false);
     }
 }
 
@@ -244,6 +288,25 @@ function bindGlobalUiListeners() {
             } else {
                 target.classList.add('hidden');
             }
+        }
+    });
+
+    document.addEventListener('input', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+        if (target.id === 'profileUsername') {
+            setFieldError('profileUsernameError', '');
+            setFieldError('profileFormError', '');
+        } else if (target.id === 'profileBio') {
+            setFieldError('profileBioError', '');
+            setFieldError('profileFormError', '');
+        }
+    });
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        if (form?.id === 'profileSettingsForm') {
+            handleProfileFormSubmit(event);
         }
     });
 
@@ -345,7 +408,8 @@ export function renderUserState(currentUser, authToken) {
         const username = user.username || 'Користувач';
         const email = user.email || 'Авторизований акаунт';
         const initial = getUserInitial(user);
-        const showGoogleLink = !user.google_linked;
+        const googleConnected = isGoogleConnected(user);
+        const showGoogleLink = !googleConnected && user.google_linking_supported !== false;
 
         const triggerAvatarMarkup = user.avatar_url
             ? `<img id="headerUserAvatar" src="${escapeHtml(user.avatar_url)}" alt="${escapeHtml(username)}" class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-indigo-100 shadow-2xs">`
@@ -441,7 +505,7 @@ export function renderUserState(currentUser, authToken) {
         `;
 
         syncAvatarModal(user, false);
-        syncProfileSettingsModal(user);
+        syncProfileSettingsModal(user, false);
     } else {
         stateDiv.innerHTML = `
             <div class="flex flex-wrap items-center gap-2">
@@ -457,7 +521,7 @@ export function renderUserState(currentUser, authToken) {
         `;
 
         syncAvatarModal(null, true);
-        syncProfileSettingsModal(null);
+        syncProfileSettingsModal(null, true);
     }
 }
 

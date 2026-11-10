@@ -6,13 +6,28 @@ use App\Models\User;
 
 class UserService
 {
-    public function updateBio(User $user, string $bio): User
+    public function updateProfile(User $user, array $data): User
     {
-        $user->update([
-            'user_bio' => $bio
-        ]);
+        $attributes = [];
 
-        return $user;
+        if (array_key_exists('username', $data)) {
+            $attributes['username'] = $data['username'];
+        }
+
+        if (array_key_exists('user_bio', $data)) {
+            $attributes['user_bio'] = $data['user_bio'];
+        }
+
+        if ($attributes !== []) {
+            $user->update($attributes);
+        }
+
+        return $user->refresh();
+    }
+
+    public function updateBio(User $user, ?string $bio): User
+    {
+        return $this->updateProfile($user, ['user_bio' => $bio]);
     }
 
     public function delete(User $user): void
