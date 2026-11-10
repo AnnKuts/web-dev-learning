@@ -303,7 +303,11 @@ test('removing an individual image preview removes only that file from upload pa
     expect(preview.textContent).toContain('4.0 КБ');
 
     // Remove the middle image (second.jpg)
+    const cards = preview.querySelectorAll('[data-preview-id]');
+    cards[1].click();
+    expect(cards[1].dataset.active).toBe('true');
     const removeButtons = preview.querySelectorAll('[data-remove-selected-image]');
+    expect(removeButtons[1].className).toContain('bg-white/95');
     removeButtons[1].click();
 
     expect(revokeUrlSpy).toHaveBeenCalledWith('blob:mock-second.jpg');

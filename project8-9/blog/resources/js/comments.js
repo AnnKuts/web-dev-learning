@@ -33,7 +33,7 @@ function render() {
                 </div>` : ''}
             </div>
             <p class="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">${escapeHtml(comment.content)}</p>
-        </article>`).join('') : '<p class="text-sm text-slate-500">Коментарів поки немає. Напишіть перший.</p>';
+        </article>`).join('') : '<div class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-2xs">Коментарів поки немає. Напишіть перший.</div>';
 }
 
 export async function loadComments(id, nextPage = 1) {

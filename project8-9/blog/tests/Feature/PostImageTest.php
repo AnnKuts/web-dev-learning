@@ -117,4 +117,52 @@ class PostImageTest extends TestCase
         );
         $paletteResponse->assertCreated()->assertJsonCount(1, 'data.images');
     }
+
+    public function test_real_3mb_png_upload_compressed_photo_and_five_image_article(): void
+    {
+        $user = User::factory()->create();
+
+        // Generate a real > 2.5 MB uncompressed/low-compression PNG (1200x900 with pseudo-random noise)
+        $width = 1200;
+        $height = 900;
+        $rawScanlines = '';
+        for ($y = 0; $y < $height; $y++) {
+            $rawScanlines .= "\x00".random_bytes($width * 3);
+        }
+        $ihdr = pack('NNccccc', $width, $height, 8, 2, 0, 0, 0);
+        $idat = gzcompress($rawScanlines, 0);
+        $chunk = fn (string $type, string $data) => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        $realLargePngBytes = "\x89PNG\r\n\x1a\n".$chunk('IHDR', $ihdr).$chunk('IDAT', $idat).$chunk('IEND', '');
+
+        $this->assertGreaterThan(2.5 * 1024 * 1024, strlen($realLargePngBytes));
+        $this->assertLessThan(5 * 1024 * 1024, strlen($realLargePngBytes));
+
+        // 1. Upload the real ~3.2 MB PNG directly to backend
+        $realPngFile = UploadedFile::fake()->createWithContent('real-screenshot-3mb.png', $realLargePngBytes);
+        $pngRes = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => [$realPngFile]]),
+            ['Accept' => 'application/json']
+        );
+        $pngRes->assertCreated()->assertJsonCount(1, 'data.images');
+        $storedPngPath = Post::findOrFail($pngRes->json('data.id'))->images->first()->path;
+        Storage::disk('images')->assertExists($storedPngPath);
+        $storedWebpSize = Storage::disk('images')->size($storedPngPath);
+        $this->assertLessThan(1.5 * 1024 * 1024, $storedWebpSize);
+
+        // 2. Upload a 5-image article (mix of PNG, JPEG, and WebP)
+        $fiveImages = [
+            UploadedFile::fake()->image('photo1.jpg', 1600, 1200),
+            UploadedFile::fake()->image('photo2.png', 1400, 1000),
+            UploadedFile::fake()->image('photo3.webp', 1200, 1200),
+            UploadedFile::fake()->image('photo4.jpg', 1000, 800),
+            UploadedFile::fake()->image('photo5.png', 800, 600),
+        ];
+        $multiRes = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => $fiveImages]),
+            ['Accept' => 'application/json']
+        );
+        $multiRes->assertCreated()->assertJsonCount(5, 'data.images');
+    }
 }

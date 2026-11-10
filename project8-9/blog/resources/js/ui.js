@@ -391,6 +391,8 @@ function syncHeaderLayoutForAuth(authenticated) {
     if (authenticated) {
         if (toggle) {
             toggle.classList.add('hidden');
+            toggle.classList.remove('inline-flex');
+            toggle.hidden = true;
             toggle.setAttribute('aria-expanded', 'false');
         }
         if (menu) {
@@ -400,6 +402,8 @@ function syncHeaderLayoutForAuth(authenticated) {
     } else {
         if (toggle) {
             toggle.classList.remove('hidden');
+            toggle.classList.add('inline-flex');
+            toggle.hidden = false;
             toggle.setAttribute('aria-expanded', 'false');
             toggle.setAttribute('aria-label', 'Відкрити меню');
             const icon = toggle.querySelector('i');

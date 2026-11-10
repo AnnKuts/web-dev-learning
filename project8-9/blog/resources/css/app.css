@@ -46,6 +46,8 @@
     }
 }
 
-[data-auth-required][hidden] {
+[data-auth-required][hidden],
+#headerMenuToggle[hidden],
+#headerMenuToggle.hidden {
     display: none !important;
 }

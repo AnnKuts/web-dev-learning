@@ -101,6 +101,12 @@ export async function optimizeImageFile(file, options = {}) {
         throw error;
     }
 
+    if (file.size > maxBytes) {
+        const error = new Error(`Файл «${file.name}» занадто великий (${formatFileSize(file.size)}). Максимальний дозволений розмір — 5 МБ.`);
+        error.code = 'OVERSIZED';
+        throw error;
+    }
+
     const canUseCanvas = typeof document !== 'undefined' && (
         typeof createImageBitmap === 'function' ||
         (typeof navigator !== 'undefined' && !/jsdom/i.test(navigator.userAgent || ''))
@@ -191,7 +197,9 @@ export async function optimizeImageFile(file, options = {}) {
         source.close?.();
     }
 
-    const qualities = [0.82, 0.7, 0.55];
+    const targetUploadBytes = 1.2 * 1024 * 1024;
+    const hardUploadCapBytes = 1.5 * 1024 * 1024;
+    const qualities = [0.82, 0.72, 0.6, 0.48];
     let bestBlob = null;
     let outputMime = 'image/webp';
     let outputExt = 'webp';
@@ -208,9 +216,28 @@ export async function optimizeImageFile(file, options = {}) {
         }
         if (blob) {
             bestBlob = blob;
-            if (blob.size <= maxBytes && blob.size <= 1.8 * 1024 * 1024) {
+            if (blob.size <= maxBytes && blob.size <= targetUploadBytes) {
                 break;
             }
+        }
+    }
+
+    if (bestBlob && bestBlob.size > hardUploadCapBytes && (targetWidth > 1200 || targetHeight > 1200)) {
+        const secondRatio = Math.min(1, 1200 / Math.max(targetWidth, targetHeight));
+        const smallerW = Math.max(1, Math.round(targetWidth * secondRatio));
+        const smallerH = Math.max(1, Math.round(targetHeight * secondRatio));
+        const secondCanvas = document.createElement('canvas');
+        const secondCtx = typeof secondCanvas.getContext === 'function' ? secondCanvas.getContext('2d') : null;
+        if (secondCtx) {
+            secondCanvas.width = smallerW;
+            secondCanvas.height = smallerH;
+            secondCtx.drawImage(canvas, 0, 0, smallerW, smallerH);
+            const smallerBlob = await canvasToBlob(secondCanvas, outputMime, 0.72);
+            if (smallerBlob && smallerBlob.size < bestBlob.size) {
+                bestBlob = smallerBlob;
+            }
+            secondCanvas.width = 0;
+            secondCanvas.height = 0;
         }
     }
 
@@ -285,7 +312,7 @@ export function renderSelectedImages(prefix = 'post') {
         }
 
         const card = document.createElement('div');
-        card.className = 'group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs';
+        card.className = 'group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs cursor-pointer transition hover:border-indigo-300';
         card.dataset.previewId = String(entry.id);
 
         const thumbWrapper = document.createElement('div');
@@ -293,7 +320,7 @@ export function renderSelectedImages(prefix = 'post') {
 
         const image = document.createElement('img');
         image.alt = `Попередній перегляд: ${entry.file.name}`;
-        image.className = 'h-full w-full object-cover';
+        image.className = 'h-full w-full object-cover transition group-hover:scale-[1.02]';
         if (entry.previewUrl) {
             image.src = entry.previewUrl;
         }
@@ -305,8 +332,8 @@ export function renderSelectedImages(prefix = 'post') {
         removeBtn.dataset.prefix = prefix;
         removeBtn.setAttribute('aria-label', `Видалити зображення ${entry.file.name}`);
         removeBtn.title = 'Видалити зображення';
-        removeBtn.className = 'absolute top-1.5 right-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/75 text-white shadow-xs hover:bg-rose-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 transition cursor-pointer';
-        removeBtn.innerHTML = '<i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i>';
+        removeBtn.className = 'absolute top-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/90 bg-white/95 text-slate-600 shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[active=true]:opacity-100 focus-visible:opacity-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 transition-all cursor-pointer';
+        removeBtn.innerHTML = '<i class="fa-solid fa-xmark text-sm" aria-hidden="true"></i>';
         thumbWrapper.append(removeBtn);
 
         const meta = document.createElement('div');
@@ -423,9 +450,12 @@ export async function startEditPost(post) {
     const existingContainer = document.getElementById('editPostExistingImages');
     if (existingContainer) {
         existingContainer.innerHTML = (post.images || []).map(image => `
-            <label class="group relative flex flex-col overflow-hidden cursor-pointer rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xs transition has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50/40">
+            <label class="group relative flex flex-col overflow-hidden cursor-pointer rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xs transition hover:border-indigo-300 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50/40">
                 <div class="relative aspect-square w-full overflow-hidden rounded-lg bg-slate-100">
                     <img src="${escapeHtml(image.url)}" alt="Зображення статті" class="h-full w-full object-cover transition group-has-[:checked]:opacity-40">
+                    <span class="pointer-events-none absolute top-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/90 bg-white/95 text-slate-600 shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-has-[:checked]:opacity-100 group-has-[:checked]:bg-rose-50 group-has-[:checked]:text-rose-600 group-has-[:checked]:border-rose-200 transition-all">
+                        <i class="fa-solid fa-xmark text-sm" aria-hidden="true"></i>
+                    </span>
                 </div>
                 <span class="mt-1.5 flex items-center justify-center gap-1.5 px-1 py-0.5 text-xs font-medium text-slate-600 group-has-[:checked]:text-rose-700">
                     <input type="checkbox" value="${image.id}" class="remove-post-image accent-rose-600 rounded">
@@ -529,8 +559,18 @@ export function initPostForms(onSaved = () => {}) {
             previewContainer.addEventListener('click', event => {
                 const target = event.target instanceof Element ? event.target : null;
                 const removeBtn = target?.closest('[data-remove-selected-image]');
-                if (!removeBtn) return;
-                removeSelectedImage(prefix, removeBtn.dataset.removeSelectedImage);
+                if (removeBtn) {
+                    removeSelectedImage(prefix, removeBtn.dataset.removeSelectedImage);
+                    return;
+                }
+                const card = target?.closest('[data-preview-id]');
+                if (card) {
+                    const isActive = card.dataset.active === 'true';
+                    previewContainer.querySelectorAll('[data-preview-id]').forEach(el => {
+                        el.dataset.active = 'false';
+                    });
+                    card.dataset.active = isActive ? 'false' : 'true';
+                }
             });
         }
 

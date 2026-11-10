@@ -15,8 +15,8 @@
             </div>
         </a>
 
-        <button type="button" id="headerMenuToggle" aria-controls="headerMenu" aria-expanded="false" aria-label="Відкрити меню"
-            class="order-2 lg:hidden shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors">
+        <button type="button" id="headerMenuToggle" aria-controls="headerMenu" aria-expanded="false" aria-label="Відкрити меню" hidden
+            class="order-2 hidden lg:hidden shrink-0 w-10 h-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors">
             <i class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
         </button>
 

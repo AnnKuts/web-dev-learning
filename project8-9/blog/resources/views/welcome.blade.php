@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Blog API Dashboard')
+@section('title', 'Blog UA')
 
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">

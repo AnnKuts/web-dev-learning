@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Blog API Dashboard')</title>
+    <title>@yield('title', 'Blog UA')</title>
     <link rel="icon" type="image/png" href="{{ asset('icon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -127,6 +127,8 @@ test('guest vs authenticated header renders compact avatar button and keeps crea
 
     // Mobile compatibility: authenticated header menu is inline and accessible without hamburger toggle
     expect(document.getElementById('headerMenuToggle').classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('headerMenuToggle').classList.contains('inline-flex')).toBe(false);
+    expect(document.getElementById('headerMenuToggle').hidden).toBe(true);
     expect(document.getElementById('headerMenu').classList.contains('hidden')).toBe(false);
     expect(dropdown.className).toContain('w-[calc(100vw-2rem)]');
     for (const item of dropdown.querySelectorAll('[role="menuitem"]')) {

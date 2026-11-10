@@ -151,6 +151,7 @@ export async function readResponse(response) {
         }
         const message = response.status === 401 ? 'Потрібна авторизація. Увійдіть у систему.'
             : response.status === 403 ? 'У вас немає дозволу на цю дію.'
+            : response.status === 413 ? 'Загальний розмір завантажуваних файлів перевищує допустимий ліміт сервера.'
             : json.message || `Помилка запиту (${response.status}).`;
         const error = new Error(message);
         error.status = response.status;
