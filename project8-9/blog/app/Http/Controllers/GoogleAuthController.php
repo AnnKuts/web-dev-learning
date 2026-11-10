@@ -30,7 +30,7 @@ class GoogleAuthController extends Controller
             'mode' => $input['mode'],
             'token_id' => $token?->id,
         ]);
-        $redirect = Socialite::driver('google')->setRequest($request)->scopes(['openid', 'email', 'profile'])->with(['prompt' => 'select_account'])->redirect();
+        $redirect = Socialite::driver('google')->setRequest($request)->enablePKCE()->scopes(['openid', 'email', 'profile'])->with(['prompt' => 'select_account'])->redirect();
 
         return response()->json(['url' => $redirect->getTargetUrl()])->header('Cache-Control', 'no-store');
     }
@@ -47,7 +47,7 @@ class GoogleAuthController extends Controller
                 throw new \RuntimeException('Cancelled');
             }
             // Stateful Socialite validates and consumes state, then calls Google's userinfo endpoint.
-            $identity = Socialite::driver('google')->setRequest($request)->user();
+            $identity = Socialite::driver('google')->setRequest($request)->enablePKCE()->user();
             $subject = $identity->user['sub'] ?? null;
             $email = $identity->getEmail();
             if (! is_string($subject) || $subject === '' || strlen($subject) > 255 || $subject !== $identity->getId()
@@ -105,7 +105,7 @@ class GoogleAuthController extends Controller
 
             return $this->finish('google_status=failed');
         } finally {
-            $request->session()->forget('state');
+            $request->session()->forget(['state', 'code_verifier']);
         }
     }
 

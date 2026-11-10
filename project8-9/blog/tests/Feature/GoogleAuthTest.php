@@ -34,6 +34,8 @@ class GoogleAuthTest extends TestCase
         $response->assertOk();
         parse_str(parse_url($response->json('url'), PHP_URL_QUERY), $query);
         $this->assertNotEmpty($query['state']);
+        $this->assertSame('S256', $query['code_challenge_method']);
+        $this->assertNotEmpty($query['code_challenge']);
 
         return $query['state'];
     }
