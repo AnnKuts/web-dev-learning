@@ -11,7 +11,11 @@ class ImageService
 {
     public function store(UploadedFile $file, string $folder, int $maxDimension): string
     {
-        $bytes = file_get_contents($file->getRealPath());
+        $realPath = $file->getRealPath();
+        $bytes = $realPath ? @file_get_contents($realPath) : false;
+        if (! is_string($bytes) || $bytes === '') {
+            throw new RuntimeException('Не вдалося прочитати завантажений файл зображення.');
+        }
         $info = @getimagesizefromstring($bytes);
         if (! $info || ! in_array($info['mime'], ['image/jpeg', 'image/png', 'image/webp'], true)
             || $info[0] * $info[1] > 25_000_000) {
@@ -21,10 +25,17 @@ class ImageService
         if (! $source) {
             throw new RuntimeException('Не вдалося прочитати зображення.');
         }
+        if (function_exists('imagepalettetotruecolor')) {
+            @imagepalettetotruecolor($source);
+        }
         $ratio = min(1, $maxDimension / max($info[0], $info[1]));
         $width = max(1, (int) round($info[0] * $ratio));
         $height = max(1, (int) round($info[1] * $ratio));
         $image = imagecreatetruecolor($width, $height);
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        imagefilledrectangle($image, 0, 0, $width, $height, $transparent);
         imagecopyresampled($image, $source, 0, 0, 0, 0, $width, $height, $info[0], $info[1]);
         ob_start();
         imagewebp($image, null, 80);

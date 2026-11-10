@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, test, expect, vi } from 'vitest';
 import { setAuth, clearAuth } from '../../resources/js/api.js';
+import { initAuth } from '../../resources/js/auth.js';
 import { initComments, loadComments } from '../../resources/js/comments.js';
 
 beforeEach(() => {
@@ -102,4 +103,29 @@ test('comment cards render accessible icon action buttons only for authorized co
     expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({
         method: 'DELETE',
     }));
+});
+
+test('logging out from an article detail page redirects directly to the home page and hides comments without rendering a duplicate guest block', async () => {
+    document.body.innerHTML = `
+        <div id="userState"></div>
+        <button id="logoutBtn" type="button">Вийти</button>
+        <article id="postDetail" data-post-id="7"></article>
+        <section id="commentsSection">
+            <form id="commentForm"></form>
+            <div id="commentsList"><p>Existing comment</p></div>
+        </section>
+        <div id="toast"><span id="toastIcon"></span><span id="toastMessage"></span></div>
+    `;
+
+    const assignSpy = vi.fn();
+    vi.stubGlobal('location', { ...window.location, pathname: '/posts/7', assign: assignSpy, hash: '', search: '' });
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ message: 'Logged out' })));
+
+    initAuth();
+    document.getElementById('logoutBtn').click();
+
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith('/'));
+    await loadComments(7);
+    expect(document.getElementById('commentsList').textContent).toBe('');
+    expect(document.getElementById('commentsSection').classList.contains('hidden')).toBe(true);
 });

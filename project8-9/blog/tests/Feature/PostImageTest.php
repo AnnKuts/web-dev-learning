@@ -56,4 +56,65 @@ class PostImageTest extends TestCase
         $this->actingAs($owner)->putJson($url, $this->data(['remove_images' => [$image->id]]))->assertUnprocessable();
         $this->assertDatabaseHas('post_images', ['id' => $image->id, 'post_id' => $another->id]);
     }
+
+    public function test_specific_ukrainian_validation_messages_and_png_palette_processing(): void
+    {
+        $user = User::factory()->create();
+
+        // 1. Unsupported format returns specific Ukrainian message
+        $unsupportedResponse = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => [UploadedFile::fake()->create('document.pdf', 100, 'application/pdf')]]),
+            ['Accept' => 'application/json']
+        );
+        $unsupportedResponse->assertUnprocessable()
+            ->assertJsonValidationErrors(['images.0']);
+        $this->assertStringContainsString(
+            'JPEG, PNG або WebP',
+            implode(' ', $unsupportedResponse->json('errors.images\.0') ?? $unsupportedResponse->json('errors')['images.0'] ?? [])
+        );
+
+        // 2. Oversized image (> 5 MB = 5120 KB) returns specific Ukrainian size message
+        $oversizedResponse = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => [UploadedFile::fake()->create('huge.png', 6000, 'image/png')]]),
+            ['Accept' => 'application/json']
+        );
+        $oversizedResponse->assertUnprocessable()
+            ->assertJsonValidationErrors(['images.0']);
+        $this->assertStringContainsString(
+            '5 МБ',
+            implode(' ', $oversizedResponse->json('errors')['images.0'] ?? [])
+        );
+
+        // 3. Too many images (> 5) returns specific Ukrainian count message
+        $tooManyResponse = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => array_fill(0, 6, UploadedFile::fake()->image('photo.jpg'))]),
+            ['Accept' => 'application/json']
+        );
+        $tooManyResponse->assertUnprocessable()
+            ->assertJsonValidationErrors(['images']);
+        $this->assertStringContainsString(
+            '5 зображень',
+            implode(' ', $tooManyResponse->json('errors.images') ?? [])
+        );
+
+        // 4. 8-bit palette PNG with alpha transparency converts cleanly to WebP
+        $paletteImg = imagecreate(40, 40);
+        $bg = imagecolorallocatealpha($paletteImg, 255, 0, 0, 64);
+        imagefill($paletteImg, 0, 0, $bg);
+        ob_start();
+        imagepng($paletteImg);
+        $pngBytes = ob_get_clean();
+        imagedestroy($paletteImg);
+
+        $paletteFile = UploadedFile::fake()->createWithContent('palette.png', $pngBytes);
+        $paletteResponse = $this->actingAs($user)->post(
+            '/api/posts',
+            $this->data(['images' => [$paletteFile]]),
+            ['Accept' => 'application/json']
+        );
+        $paletteResponse->assertCreated()->assertJsonCount(1, 'data.images');
+    }
 }

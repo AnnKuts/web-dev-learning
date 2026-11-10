@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach, expect, vi } from 'vitest';
 import { saveArticleDraft, restoreArticleDraft, DRAFT_STORAGE_KEY } from '../../resources/js/storage.js';
 import { createPost, updatePost, fetchAllTags, readResponse, setAuth, clearAuth } from '../../resources/js/api.js';
-import { initPostForms } from '../../resources/js/post-form.js';
+import { initPostForms, startEditPost, addFilesToSelection, optimizeImageFile, getSelectedFiles } from '../../resources/js/post-form.js';
 import { loadPosts, loadPost } from '../../resources/js/posts.js';
 import { escapeHtml } from '../../resources/js/ui.js';
 
@@ -25,12 +25,20 @@ beforeEach(() => {
                     <label><input type="checkbox" name="tags" value="18" checked>Laravel</label>
                 </div>
                 <p id="postTagsError" class="hidden"></p>
-                <input id="postImages" type="file" multiple><div id="postImagePreview"></div>
+                <span id="postImageCount">0 / 5 зображень</span>
+                <button type="button" id="postClearImagesBtn" class="hidden">Видалити всі</button>
+                <div id="postImageDropzone">
+                    <input id="postImages" type="file" multiple class="sr-only">
+                    <button type="button" id="postSelectImagesBtn">Обрати фотографії</button>
+                </div>
+                <p id="postImagesError" class="hidden"></p>
+                <div id="postImagePreview"></div>
+                <p id="postFormError" class="hidden"></p>
                 <button id="clearDraftBtn" type="button">Очистити чернетку</button>
                 <button id="submitPostBtn" type="submit">Опублікувати</button>
             </form>
         </div>
-        <div id="editPostModal">
+        <div id="editPostModal" class="hidden">
             <form id="editPostForm" novalidate>
                 <input id="editPostId" type="hidden" value="7">
                 <input id="editPostHeader" name="header" required minlength="5" maxlength="100">
@@ -41,7 +49,17 @@ beforeEach(() => {
                     <label><input type="checkbox" name="tags" value="18" checked>Laravel</label>
                 </div>
                 <p id="editPostTagsError" class="hidden"></p>
-                <input id="editPostImages" type="file" multiple><div id="editPostImagePreview"></div><div id="editPostExistingImages"></div>
+                <span id="editPostImageCount">0 / 5 зображень</span>
+                <button type="button" id="editPostClearImagesBtn" class="hidden">Видалити всі</button>
+                <div id="editPostImageDropzone">
+                    <input id="editPostImages" type="file" multiple class="sr-only">
+                    <button type="button" id="editPostSelectImagesBtn">Обрати фотографії</button>
+                </div>
+                <p id="editPostImagesError" class="hidden"></p>
+                <div id="editPostImagePreview"></div>
+                <div id="editPostExistingImages"></div>
+                <p id="editPostFormError" class="hidden"></p>
+                <button type="button" data-modal-close="editPostModal">Скасувати</button>
                 <button id="submitEditPostBtn" type="submit">Зберегти зміни</button>
             </form>
         </div>
@@ -260,4 +278,172 @@ test.each([401, 403, 404, 'network'])('article detail API error (%s) clears the 
     const error = document.getElementById('viewPostDescription').textContent;
     expect(error).not.toContain('Previous article');
     expect(error).toContain(status === 401 ? 'Ласкаво просимо' : status === 404 ? 'Статтю не знайдено' : 'Помилка завантаження');
+});
+
+test('removing an individual image preview removes only that file from upload payload and revokes its URL while preserving form fields', async () => {
+    const createUrlSpy = vi.spyOn(URL, 'createObjectURL').mockImplementation(file => `blob:mock-${file.name}`);
+    const revokeUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    initPostForms(vi.fn());
+    fillDraft();
+
+    const file1 = new File(['a'.repeat(2048)], 'first.png', { type: 'image/png' });
+    const file2 = new File(['b'.repeat(4096)], 'second.jpg', { type: 'image/jpeg' });
+    await addFilesToSelection('post', [file1, file2]);
+
+    // Selecting additional image across a second selection
+    const file3 = new File(['c'.repeat(1024)], 'third.webp', { type: 'image/webp' });
+    await addFilesToSelection('post', [file3]);
+
+    const preview = document.getElementById('postImagePreview');
+    expect(preview.querySelectorAll('[data-preview-id]')).toHaveLength(3);
+    expect(document.getElementById('postImageCount').textContent).toBe('3 / 5 зображень');
+    expect(preview.textContent).toContain('first.png');
+    expect(preview.textContent).toContain('2.0 КБ');
+    expect(preview.textContent).toContain('second.jpg');
+    expect(preview.textContent).toContain('4.0 КБ');
+
+    // Remove the middle image (second.jpg)
+    const removeButtons = preview.querySelectorAll('[data-remove-selected-image]');
+    removeButtons[1].click();
+
+    expect(revokeUrlSpy).toHaveBeenCalledWith('blob:mock-second.jpg');
+    expect(preview.querySelectorAll('[data-preview-id]')).toHaveLength(2);
+    expect(document.getElementById('postImageCount').textContent).toBe('2 / 5 зображень');
+    expect(getSelectedFiles('post').map(f => f.name)).toEqual(['first.png', 'third.webp']);
+
+    // Title, description, and tags are preserved
+    expect(document.getElementById('postHeader').value).toBe('Valid header');
+    expect(document.getElementById('postDescription').value).toBe('A description longer than twenty characters.');
+    expect(document.querySelector('#postTagCheckboxes input').checked).toBe(true);
+
+    // Submit form and verify FormData contains only first.png and third.webp
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ data: { id: 99 } }, { status: 201 })));
+    await submitForm('newPostForm');
+
+    const [, options] = fetch.mock.calls[0];
+    expect(options.body).toBeInstanceOf(FormData);
+    const uploadedNames = options.body.getAll('images[]').map(f => f.name);
+    expect(uploadedNames).toEqual(['first.png', 'third.webp']);
+
+    createUrlSpy.mockRestore();
+    revokeUrlSpy.mockRestore();
+});
+
+test('displays specific Ukrainian errors for unsupported format, oversized image, too many images, and corrupted image', async () => {
+    initPostForms(vi.fn());
+
+    // 1. Unsupported format identifies the filename
+    const badFormat = new File(['svg content'], 'diagram.svg', { type: 'image/svg+xml' });
+    await addFilesToSelection('post', [badFormat]);
+    const errorEl = document.getElementById('postImagesError');
+    expect(errorEl.classList.contains('hidden')).toBe(false);
+    expect(errorEl.innerText).toContain('diagram.svg');
+    expect(errorEl.innerText).toContain('JPEG, PNG або WebP');
+    expect(getSelectedFiles('post')).toHaveLength(0);
+
+    // 2. Oversized image (> 5 MB) identifies the filename and its size
+    const sixMbBytes = new Uint8Array(6 * 1024 * 1024);
+    const hugePng = new File([sixMbBytes], 'huge-screenshot.png', { type: 'image/png' });
+    await addFilesToSelection('post', [hugePng]);
+    expect(errorEl.classList.contains('hidden')).toBe(false);
+    expect(errorEl.innerText).toContain('huge-screenshot.png');
+    expect(errorEl.innerText).toContain('6.00 МБ');
+    expect(errorEl.innerText).toContain('5 МБ');
+    expect(getSelectedFiles('post')).toHaveLength(0);
+
+    // 3. Corrupted image reports processing failure with filename
+    const corruptedPng = new File(['not a real image'], 'broken.png', { type: 'image/png' });
+    corruptedPng.corrupted = true;
+    await addFilesToSelection('post', [corruptedPng]);
+    expect(errorEl.innerText).toContain('broken.png');
+    expect(errorEl.innerText).toContain('Не вдалося обробити зображення');
+
+    // 4. Too many images (> 5) reports the 5-image limit while keeping already selected images
+    const validFiles = [1, 2, 3, 4].map(n => new File(['ok'], `img-${n}.jpg`, { type: 'image/jpeg' }));
+    await addFilesToSelection('post', validFiles);
+    expect(getSelectedFiles('post')).toHaveLength(4);
+
+    const extraFiles = [5, 6].map(n => new File(['ok'], `img-${n}.jpg`, { type: 'image/jpeg' }));
+    await addFilesToSelection('post', extraFiles);
+    expect(errorEl.innerText).toContain('щонайбільше 5 зображень');
+    expect(getSelectedFiles('post')).toHaveLength(4);
+
+    // Clear all button removes all selected previews
+    document.getElementById('postClearImagesBtn').click();
+    expect(getSelectedFiles('post')).toHaveLength(0);
+    expect(document.getElementById('postImageCount').textContent).toBe('0 / 5 зображень');
+});
+
+test('optimizeImageFile resizes and compresses large PNG/JPEG images via canvas before upload', async () => {
+    const closeSpy = vi.fn();
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({
+        width: 3200,
+        height: 1600,
+        close: closeSpy,
+    })));
+
+    const drawImageSpy = vi.fn();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+        clearRect: vi.fn(),
+        drawImage: drawImageSpy,
+    });
+    const toBlobSpy = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb) {
+        cb(new Blob(['compressed-webp-bytes'], { type: 'image/webp' }));
+    });
+
+    const largePng = new File([new Uint8Array(2 * 1024 * 1024)], 'camera-photo.png', { type: 'image/png' });
+    const optimized = await optimizeImageFile(largePng);
+
+    expect(drawImageSpy).toHaveBeenCalledWith(expect.anything(), 0, 0, 1600, 800);
+    expect(closeSpy).toHaveBeenCalled();
+    expect(optimized.name).toBe('camera-photo.webp');
+    expect(optimized.type).toBe('image/webp');
+    expect(optimized.size).toBeLessThan(largePng.size);
+
+    getContextSpy.mockRestore();
+    toBlobSpy.mockRestore();
+});
+
+test('edit article modal distinguishes new images from existing images and cancel preserves stored images', async () => {
+    initPostForms(vi.fn());
+    const existingPost = {
+        id: 7,
+        header: 'Existing article',
+        description: 'Existing article description with more than twenty characters.',
+        tags: [{ id: 18, tag_name: 'Laravel' }],
+        images: [
+            { id: 101, url: '/storage/posts/one.webp' },
+            { id: 102, url: '/storage/posts/two.webp' },
+        ],
+    };
+
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+        if (url === '/api/posts/7') return Response.json({ data: existingPost });
+        return Response.json({ data: [{ id: 18, tag_name: 'Laravel' }], meta: { last_page: 1 } });
+    }));
+
+    await startEditPost({ id: 7 });
+    expect(document.getElementById('editPostExistingImages').querySelectorAll('.remove-post-image')).toHaveLength(2);
+    expect(document.getElementById('editPostImageCount').textContent).toBe('2 / 5 зображень');
+
+    // Add 2 new images and remove 1 of the new images before saving
+    const new1 = new File(['new1'], 'new-one.png', { type: 'image/png' });
+    const new2 = new File(['new2'], 'new-two.png', { type: 'image/png' });
+    await addFilesToSelection('editPost', [new1, new2]);
+    expect(document.getElementById('editPostImageCount').textContent).toBe('4 / 5 зображень');
+
+    document.querySelector('#editPostImagePreview [data-remove-selected-image]').click();
+    expect(getSelectedFiles('editPost').map(f => f.name)).toEqual(['new-two.png']);
+    expect(document.getElementById('editPostImageCount').textContent).toBe('3 / 5 зображень');
+
+    // Mark first existing image for removal, then click Cancel -> no DELETE/PUT request is sent
+    const existingCheckboxes = document.querySelectorAll('#editPostExistingImages .remove-post-image');
+    existingCheckboxes[0].checked = true;
+    existingCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    expect(document.getElementById('editPostImageCount').textContent).toBe('2 / 5 зображень');
+
+    document.querySelector('[data-modal-close="editPostModal"]').click();
+    expect(getSelectedFiles('editPost')).toHaveLength(0);
+    expect(existingCheckboxes[0].checked).toBe(false);
+    expect(fetch.mock.calls.every(([, opts]) => !opts?.method || opts.method === 'GET')).toBe(true);
 });

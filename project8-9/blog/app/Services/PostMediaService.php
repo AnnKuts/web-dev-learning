@@ -69,7 +69,11 @@ class PostMediaService
     private function attach(Post $post, array $files, int $order, array &$stored): void
     {
         foreach ($files as $file) {
-            $path = $this->images->store($file, 'posts', 1600);
+            try {
+                $path = $this->images->store($file, 'posts', 1600);
+            } catch (\RuntimeException $e) {
+                throw ValidationException::withMessages(['images' => [$e->getMessage()]]);
+            }
             $stored[] = $path;
             $post->images()->create(['path' => $path, 'display_order' => ++$order]);
         }

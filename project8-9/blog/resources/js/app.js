@@ -20,24 +20,30 @@ function syncAuthControls() {
 
 function refreshCurrentTab(page) {
     if (!getAuthToken()) {
-        renderGuestState(document.getElementById('postsList'));
-        renderGuestState(document.getElementById('tagsList'));
-        renderGuestState(document.getElementById('usersList'));
         const detail = document.getElementById('postDetail');
         if (detail) {
+            document.getElementById('commentsSection')?.classList.add('hidden');
+            document.getElementById('commentsList')?.replaceChildren();
+            document.getElementById('commentForm')?.classList.add('hidden');
+            if (window.location.pathname !== '/') {
+                window.location.assign('/');
+                return;
+            }
             document.getElementById('viewPostHeader').textContent = '';
             document.getElementById('viewPostMeta').textContent = '';
             document.getElementById('viewPostTags').textContent = '';
             renderGuestState(document.getElementById('viewPostDescription'));
-            renderGuestState(document.getElementById('commentsList'));
-            document.getElementById('commentForm')?.classList.add('hidden');
         }
+        renderGuestState(document.getElementById('postsList'));
+        renderGuestState(document.getElementById('tagsList'));
+        renderGuestState(document.getElementById('usersList'));
         document.getElementById('postsPagination')?.replaceChildren();
         document.getElementById('usersPagination')?.replaceChildren();
         return;
     }
     const postPage = document.getElementById('postDetail');
     if (postPage) {
+        document.getElementById('commentsSection')?.classList.remove('hidden');
         document.getElementById('commentForm')?.classList.remove('hidden');
         loadPost(postPage.dataset.postId);
         loadComments(postPage.dataset.postId);

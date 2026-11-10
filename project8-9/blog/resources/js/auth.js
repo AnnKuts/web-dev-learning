@@ -26,6 +26,10 @@ export function initAuth(onAuthChange = () => {}) {
                 clearAuth();
                 updateAuthDisplay();
                 showToast('Ви вийшли з системи');
+                if (document.getElementById('postDetail') || window.location.pathname !== '/') {
+                    window.location.assign('/');
+                    return;
+                }
                 latestOnAuthChange();
             } catch (error) {
                 showToast(error.message, true);

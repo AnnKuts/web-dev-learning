@@ -1,5 +1,5 @@
 import { getHeaders, getAuthToken, readResponse } from './api.js';
-import { escapeHtml, renderGuestState, showToast } from './ui.js';
+import { escapeHtml, showToast } from './ui.js';
 
 let page = 1;
 let postId;
@@ -41,7 +41,12 @@ export async function loadComments(id, nextPage = 1) {
     page = nextPage;
     const list = document.getElementById('commentsList');
     if (!list) return;
-    if (!getAuthToken()) { renderGuestState(list); return; }
+    if (!getAuthToken()) {
+        list.replaceChildren();
+        document.getElementById('commentsSection')?.classList.add('hidden');
+        return;
+    }
+    document.getElementById('commentsSection')?.classList.remove('hidden');
     list.textContent = 'Завантаження коментарів…';
     try {
         const result = await readResponse(await fetch(`/api/posts/${id}/comments?page=${page}`, { headers: getHeaders() }));
@@ -51,7 +56,11 @@ export async function loadComments(id, nextPage = 1) {
         const more = document.getElementById('commentsMore');
         if (more) more.classList.toggle('hidden', page >= result.meta.last_page);
     } catch (error) {
-        if (error.status === 401 && !getAuthToken()) { renderGuestState(list); return; }
+        if (error.status === 401 && !getAuthToken()) {
+            list.replaceChildren();
+            document.getElementById('commentsSection')?.classList.add('hidden');
+            return;
+        }
         list.textContent = 'Не вдалося завантажити коментарі. Спробуйте ще раз.';
     }
 }
