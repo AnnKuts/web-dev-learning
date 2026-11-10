@@ -3,11 +3,27 @@ import { initPosts, loadPosts, loadPost, clearPostTagFilter } from './posts.js';
 import { initPostForms, startEditPost } from './post-form.js';
 import { initTags, loadTags, loadTagsForSelects } from './tags.js';
 import { initUsers, loadUsers } from './users.js';
-import { initHeaderMenu, initModals } from './ui.js';
+import { initHeaderMenu, initModals, renderGuestState, renderUserState } from './ui.js';
+import { getAuthToken, getCurrentUser } from './api.js';
 
 let currentTab = 'posts';
 
 function refreshCurrentTab(page) {
+    if (!getAuthToken()) {
+        renderGuestState(document.getElementById('postsList'));
+        renderGuestState(document.getElementById('tagsList'));
+        renderGuestState(document.getElementById('usersList'));
+        const detail = document.getElementById('postDetail');
+        if (detail) {
+            document.getElementById('viewPostHeader').textContent = '';
+            document.getElementById('viewPostMeta').textContent = '';
+            document.getElementById('viewPostTags').textContent = '';
+            renderGuestState(document.getElementById('viewPostDescription'));
+        }
+        document.getElementById('postsPagination')?.replaceChildren();
+        document.getElementById('usersPagination')?.replaceChildren();
+        return;
+    }
     const postPage = document.getElementById('postDetail');
     if (postPage) {
         loadPost(postPage.dataset.postId);
@@ -39,10 +55,14 @@ function switchTab(tab, page) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('auth:expired', () => {
+        renderUserState(getCurrentUser(), getAuthToken());
+        refreshCurrentTab();
+    });
     initHeaderMenu();
     initModals();
     initAuth(() => {
-        loadTagsForSelects();
+        if (getAuthToken()) loadTagsForSelects();
         refreshCurrentTab();
     });
     initPostForms(page => {
@@ -65,9 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
     document.getElementById('refreshBtn')?.addEventListener('click', () => {
-        loadTagsForSelects();
+        if (getAuthToken()) loadTagsForSelects();
         refreshCurrentTab();
     });
-    loadTagsForSelects();
+    if (getAuthToken()) loadTagsForSelects();
     refreshCurrentTab();
 });

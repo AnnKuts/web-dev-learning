@@ -125,6 +125,10 @@ export async function logoutUser() {
 export async function readResponse(response) {
     const json = response.status === 204 ? {} : await response.json().catch(() => ({}));
     if (!response.ok) {
+        if (response.status === 401 && authToken) {
+            clearAuth();
+            document.dispatchEvent(new Event('auth:expired'));
+        }
         const message = response.status === 401 ? 'Потрібна авторизація. Увійдіть у систему.'
             : response.status === 403 ? 'У вас немає дозволу на цю дію.'
             : json.message || `Помилка запиту (${response.status}).`;

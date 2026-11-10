@@ -1,5 +1,5 @@
-import { fetchPosts, fetchPost, deletePost, readResponse } from './api.js';
-import { renderListError, escapeHtml, showToast } from './ui.js';
+import { fetchPosts, fetchPost, deletePost, readResponse, getAuthToken } from './api.js';
+import { renderListError, renderGuestState, escapeHtml, showToast } from './ui.js';
 import { renderPagination } from './pagination.js';
 
 let currentPostPage = 1;
@@ -27,6 +27,14 @@ export async function loadPost(id) {
     const description = document.getElementById('viewPostDescription');
     const meta = document.getElementById('viewPostMeta');
     const tags = document.getElementById('viewPostTags');
+    if (!getAuthToken()) {
+        postRequest?.abort();
+        header.textContent = '';
+        meta.textContent = '';
+        tags.textContent = '';
+        renderGuestState(description);
+        return;
+    }
     header.textContent = 'Завантаження статті…';
     description.textContent = '';
     meta.textContent = '';
@@ -44,6 +52,13 @@ export async function loadPost(id) {
         tags.innerHTML = (post.tags || []).map(tag => `<a href="/?tag=${tag.id}" data-action="filter-tag" class="hover:underline">#${escapeHtml(tag.tag_name)}</a>`).join(' ');
     } catch (error) {
         if (request.signal.aborted) return;
+        if (error.status === 401 && !getAuthToken()) {
+            header.textContent = '';
+            meta.textContent = '';
+            tags.textContent = '';
+            renderGuestState(description);
+            return;
+        }
         header.textContent = 'Не вдалося завантажити статтю';
         if (error.status === 404) error.message = 'Статтю не знайдено. Можливо, її видалено.';
         renderListError(description, error);
@@ -57,6 +72,12 @@ export async function loadPosts(page = currentPostPage) {
     if (!container) return;
 
     postsRequest?.abort();
+    if (!getAuthToken()) {
+        currentPostsMap.clear();
+        if (pagination) pagination.replaceChildren();
+        renderGuestState(container);
+        return;
+    }
     const request = new AbortController();
     postsRequest = request;
     const query = document.getElementById('postSearch')?.value.trim() || '';
@@ -128,6 +149,7 @@ export async function loadPosts(page = currentPostPage) {
         renderPagination(pagination, json.meta || {}, 'page-posts', posts.length);
     } catch (err) {
         if (request.signal.aborted) return;
+        if (err.status === 401 && !getAuthToken()) { renderGuestState(container); return; }
         renderListError(container, err);
     }
 }

@@ -128,6 +128,20 @@ export function initModals() {
     });
 }
 
+export function renderGuestState(container) {
+    if (!container) return;
+    container.innerHTML = `
+        <div class="bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-2xs col-span-full">
+            <h2 class="text-lg font-semibold text-slate-900 mb-2">Ласкаво просимо до Блогу UA</h2>
+            <p class="text-sm text-slate-600 mb-5">Увійдіть або зареєструйтеся, щоб переглядати статті.</p>
+            <div class="flex flex-wrap justify-center gap-3">
+                <button type="button" data-modal-open="loginModal" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Увійти</button>
+                <button type="button" data-modal-open="registerModal" class="rounded-xl border border-indigo-200 px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Зареєструватися</button>
+            </div>
+        </div>
+    `;
+}
+
 export function renderListError(container, error) {
     if (error.status === 401) {
         container.innerHTML = `

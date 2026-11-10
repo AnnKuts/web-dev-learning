@@ -1,5 +1,5 @@
-import { fetchUsers, readResponse } from './api.js';
-import { renderListError, escapeHtml } from './ui.js';
+import { fetchUsers, readResponse, getAuthToken } from './api.js';
+import { renderListError, renderGuestState, escapeHtml } from './ui.js';
 import { renderPagination } from './pagination.js';
 
 let currentUserPage = 1;
@@ -9,6 +9,11 @@ export async function loadUsers(page = currentUserPage) {
     const container = document.getElementById('usersList');
     const pagination = document.getElementById('usersPagination');
     if (!container) return;
+    if (!getAuthToken()) {
+        if (pagination) pagination.replaceChildren();
+        renderGuestState(container);
+        return;
+    }
     if (pagination) pagination.innerHTML = '';
     container.innerHTML = '<div class="p-8 text-center text-slate-400 col-span-full">Завантаження...</div>';
 
@@ -40,6 +45,7 @@ export async function loadUsers(page = currentUserPage) {
 
         renderPagination(pagination, json.meta || {}, 'page-users', users.length);
     } catch (err) {
+        if (err.status === 401 && !getAuthToken()) return;
         renderListError(container, err);
     }
 }

@@ -1,5 +1,5 @@
-import { fetchAllTags, createTag, deleteTag, readResponse } from './api.js';
-import { renderListError, escapeHtml, showToast, closeModal } from './ui.js';
+import { fetchAllTags, createTag, deleteTag, readResponse, getAuthToken } from './api.js';
+import { renderListError, renderGuestState, escapeHtml, showToast, closeModal } from './ui.js';
 import { restoreArticleDraft, saveArticleDraft } from './storage.js';
 
 export function getSelectedTagIds(containerId) {
@@ -7,6 +7,7 @@ export function getSelectedTagIds(containerId) {
 }
 
 export async function loadTagsForSelects() {
+    if (!getAuthToken()) return;
     try {
         const allTags = await fetchAllTags();
 
@@ -32,6 +33,7 @@ export async function loadTagsForSelects() {
 
         restoreArticleDraft(true);
     } catch (e) {
+        if (e.status === 401 && !getAuthToken()) return;
         showToast(e.message, true);
     }
 }
@@ -39,6 +41,7 @@ export async function loadTagsForSelects() {
 export async function loadTags() {
     const container = document.getElementById('tagsList');
     if (!container) return;
+    if (!getAuthToken()) { renderGuestState(container); return; }
     container.innerHTML = '<div class="p-8 text-center text-slate-400 col-span-full">Завантаження...</div>';
 
     try {
@@ -61,6 +64,7 @@ export async function loadTags() {
             </div>
         `).join('');
     } catch (err) {
+        if (err.status === 401 && !getAuthToken()) return;
         renderListError(container, err);
     }
 }

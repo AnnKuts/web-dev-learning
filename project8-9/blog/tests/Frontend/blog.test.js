@@ -1,12 +1,13 @@
 import { test, beforeEach, afterEach, expect, vi } from 'vitest';
 import { saveArticleDraft, restoreArticleDraft, DRAFT_STORAGE_KEY } from '../../resources/js/storage.js';
-import { fetchAllTags, readResponse } from '../../resources/js/api.js';
+import { fetchAllTags, readResponse, setAuth, clearAuth } from '../../resources/js/api.js';
 import { initPostForms } from '../../resources/js/post-form.js';
 import { loadPosts, loadPost } from '../../resources/js/posts.js';
 import { escapeHtml } from '../../resources/js/ui.js';
 
 beforeEach(() => {
     localStorage.clear();
+    setAuth('test-token', { username: 'Test' });
     document.body.innerHTML = `
         <div id="toast" class="hidden">
             <span id="toastIcon"></span><span id="toastMessage"></span>
@@ -230,8 +231,8 @@ test.each([401, 403, 404, 'network'])('article detail API error (%s) clears the 
         return Response.json({ message: 'Rejected' }, { status });
     }));
     await loadPost(7);
-    expect(document.getElementById('viewPostHeader').textContent).toBe('Не вдалося завантажити статтю');
+    expect(document.getElementById('viewPostHeader').textContent).toBe(status === 401 ? '' : 'Не вдалося завантажити статтю');
     const error = document.getElementById('viewPostDescription').textContent;
     expect(error).not.toContain('Previous article');
-    expect(error).toContain(status === 401 ? 'Потрібна авторизація' : status === 404 ? 'Статтю не знайдено' : 'Помилка завантаження');
+    expect(error).toContain(status === 401 ? 'Ласкаво просимо' : status === 404 ? 'Статтю не знайдено' : 'Помилка завантаження');
 });
