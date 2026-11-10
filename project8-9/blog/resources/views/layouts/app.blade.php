@@ -2,6 +2,8 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Blog API Dashboard')</title>
     <link rel="icon" type="image/png" href="{{ asset('icon.png') }}">

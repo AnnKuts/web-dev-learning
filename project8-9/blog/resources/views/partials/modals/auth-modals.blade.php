@@ -15,6 +15,10 @@
                 <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm">Увійти</button>
             </div>
         </form>
+        @if(config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'))
+            <button type="button" data-google-login class="w-full mt-4 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">Continue with Google</button>
+        @endif
+
     </div>
 </div>
 
@@ -46,6 +50,23 @@
                 <button type="button" data-modal-close="registerModal" class="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50">Скасувати</button>
                 <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm">Зареєструватися</button>
             </div>
+        </form>
+        @if(config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'))
+            <button type="button" data-google-login class="w-full mt-4 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">Continue with Google</button>
+        @endif
+
+    </div>
+</div>
+
+<div id="googleLinkModal" class="modal-backdrop fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-bold mb-4">Підключити Google</h2>
+        <p class="text-sm mb-4">Підтвердьте пароль цього акаунту, а потім виберіть власний акаунт Google. Якщо ви вже входите через Google, повторне підключення не потрібне.</p>
+        <form id="googleLinkForm" class="space-y-4">
+            <label for="googleLinkPassword">Поточний пароль</label>
+            <input id="googleLinkPassword" type="password" autocomplete="current-password" required class="w-full border rounded-lg px-3 py-2">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Підключити Google</button>
+            <button type="button" data-modal-close="googleLinkModal" class="px-4 py-2 border rounded-lg">Скасувати</button>
         </form>
     </div>
 </div>

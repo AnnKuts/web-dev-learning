@@ -1,3 +1,4 @@
+import { initGoogleAuth } from './google-auth.js';
 import { getAuthToken, getCurrentUser, setAuth, clearAuth, loginUser, registerUser, logoutUser, readResponse } from './api.js';
 import { showToast, closeModal, renderUserState } from './ui.js';
 
@@ -7,6 +8,7 @@ function updateAuthDisplay() {
 
 export function initAuth(onAuthChange) {
     updateAuthDisplay();
+    initGoogleAuth(() => { updateAuthDisplay(); onAuthChange(); });
     document.addEventListener('click', async (event) => {
         if (!event.target.closest('#logoutBtn')) return;
         try {

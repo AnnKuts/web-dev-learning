@@ -53,6 +53,7 @@ export function renderUserState(currentUser, authToken) {
                     ${escapeHtml((currentUser.username || 'U')[0])}
                 </div>
                 <span class="min-w-0 flex-1 text-xs font-semibold text-slate-800 lg:max-w-[120px] truncate">${escapeHtml(currentUser.username)}</span>
+                <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
                 <button id="logoutBtn" type="button" title="Вийти з акаунту" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
                     <span>Вийти</span>
@@ -66,6 +67,7 @@ export function renderUserState(currentUser, authToken) {
                     <i class="fa-solid fa-key text-[10px]"></i>
                 </div>
                 <span class="min-w-0 flex-1 truncate text-xs font-medium text-slate-700">Токен активний</span>
+                <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
                 <button id="logoutBtn" type="button" title="Вийти" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
                     <span>Вийти</span>
