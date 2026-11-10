@@ -50,5 +50,10 @@ class PostImageTest extends TestCase
         $this->actingAs($owner)->post($url, $this->data(['_method' => 'PUT', 'images' => [UploadedFile::fake()->create('evil.svg', 1, 'image/svg+xml')]]), ['Accept' => 'application/json'])->assertUnprocessable();
         $this->actingAs($owner)->post($url, $this->data(['_method' => 'PUT', 'images' => array_fill(0, 6, UploadedFile::fake()->image('x.png'))]), ['Accept' => 'application/json'])->assertUnprocessable();
         $this->assertDatabaseCount('post_images', 0);
+
+        $another = Post::factory()->create(['user_id' => $owner->id]);
+        $image = $another->images()->create(['path' => 'posts/other.webp', 'display_order' => 1]);
+        $this->actingAs($owner)->putJson($url, $this->data(['remove_images' => [$image->id]]))->assertUnprocessable();
+        $this->assertDatabaseHas('post_images', ['id' => $image->id, 'post_id' => $another->id]);
     }
 }

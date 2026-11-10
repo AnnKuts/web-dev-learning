@@ -1,4 +1,3 @@
-
 import { getAuthToken, getHeaders, getCurrentUser, setAuth, readResponse } from './api.js';
 import { renderUserState, closeModal, showToast } from './ui.js';
 

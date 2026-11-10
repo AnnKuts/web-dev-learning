@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\UserResource;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AvatarController extends Controller
 {
@@ -21,7 +22,7 @@ class AvatarController extends Controller
             $this->images->delete($path);
             throw $e;
         }
-        $this->images->delete($old);
+        $this->deleteOld($old);
 
         return new UserResource($request->user()->refresh());
     }
@@ -30,8 +31,17 @@ class AvatarController extends Controller
     {
         $old = $request->user()->avatar_path;
         $request->user()->forceFill(['avatar_path' => null])->save();
-        $this->images->delete($old);
+        $this->deleteOld($old);
 
         return new UserResource($request->user()->refresh());
+    }
+
+    private function deleteOld(?string $path): void
+    {
+        try {
+            $this->images->delete($path);
+        } catch (\Throwable $e) {
+            Log::warning('Avatar cleanup failed', ['path' => $path]);
+        }
     }
 }
