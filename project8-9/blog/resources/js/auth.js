@@ -1,29 +1,41 @@
 import { initGoogleAuth } from './google-auth.js';
 import { getAuthToken, getCurrentUser, setAuth, clearAuth, loginUser, registerUser, logoutUser, readResponse } from './api.js';
-import { showToast, closeModal, renderUserState } from './ui.js';
+import { showToast, closeModal, renderUserState, closeUserDropdown } from './ui.js';
+
+let logoutListenerBound = false;
+let latestOnAuthChange = () => {};
 
 function updateAuthDisplay() {
     renderUserState(getCurrentUser(), getAuthToken());
 }
 
-export function initAuth(onAuthChange) {
+export function initAuth(onAuthChange = () => {}) {
+    latestOnAuthChange = onAuthChange;
     updateAuthDisplay();
-    initGoogleAuth(() => { updateAuthDisplay(); onAuthChange(); });
-    document.addEventListener('click', async (event) => {
-        if (!event.target.closest('#logoutBtn')) return;
-        try {
-            const response = await logoutUser();
-            if (response.status !== 401) await readResponse(response);
-            clearAuth();
-            updateAuthDisplay();
-            showToast('Ви вийшли з системи');
-            onAuthChange();
-        } catch (error) {
-            showToast(error.message, true);
-        }
-    });
+    initGoogleAuth(() => { updateAuthDisplay(); latestOnAuthChange(); });
+
+    if (!logoutListenerBound) {
+        logoutListenerBound = true;
+        document.addEventListener('click', async (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target?.closest('#logoutBtn')) return;
+            closeUserDropdown();
+            try {
+                const response = await logoutUser();
+                if (response.status !== 401) await readResponse(response);
+                clearAuth();
+                updateAuthDisplay();
+                showToast('Ви вийшли з системи');
+                latestOnAuthChange();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+    }
+
     const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
+    if (loginForm && loginForm.dataset.bound !== 'true') {
+        loginForm.dataset.bound = 'true';
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail')?.value.trim() || '';
@@ -37,7 +49,7 @@ export function initAuth(onAuthChange) {
                     showToast('Успішний вхід!');
                     closeModal('loginModal');
                     updateAuthDisplay();
-                    onAuthChange();
+                    latestOnAuthChange();
                 } else {
                     showToast(json.message || 'Невірні облікові дані', true);
                 }
@@ -48,7 +60,8 @@ export function initAuth(onAuthChange) {
     }
 
     const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
+    if (registerForm && registerForm.dataset.bound !== 'true') {
+        registerForm.dataset.bound = 'true';
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('regUsername')?.value.trim() || '';
@@ -65,7 +78,7 @@ export function initAuth(onAuthChange) {
                     showToast('Реєстрація успішна!');
                     closeModal('registerModal');
                     updateAuthDisplay();
-                    onAuthChange();
+                    latestOnAuthChange();
                 } else {
                     showToast(json.message || 'Помилка реєстрації', true);
                 }

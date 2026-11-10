@@ -105,7 +105,11 @@ class GoogleAuthTest extends TestCase
         $this->assertSame('google-subject', $user->fresh()->google_id);
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('oauth_exchanges', 0);
-        $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password'])->assertOk()->assertJsonStructure(['token', 'user']);
+        $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertOk()
+            ->assertJsonStructure(['token', 'user'])
+            ->assertJsonPath('user.google_linked', true)
+            ->assertJsonMissingPath('user.google_id');
         $this->googleCallback($this->start(['sub' => 'different-subject'], 'link', $token))->assertRedirect('/#google_status=failed');
         $this->assertSame('google-subject', $user->fresh()->google_id);
     }

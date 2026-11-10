@@ -1,3 +1,8 @@
+import { getCurrentUser } from './api.js';
+
+let globalUiListenersBound = false;
+let matchMediaBound = false;
+
 export function showToast(msg, isError = false) {
     const toast = document.getElementById('toast');
     const icon = document.getElementById('toastIcon');
@@ -18,10 +23,164 @@ export function showToast(msg, isError = false) {
     }, 3000);
 }
 
+export function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+export function getUserInitial(user) {
+    const source = (user?.username || user?.email || 'U').trim();
+    return (source[0] || 'U').toUpperCase();
+}
+
+export function syncAvatarModal(user = getCurrentUser(), resetInput = false) {
+    const preview = document.getElementById('avatarPreview');
+    const placeholder = document.getElementById('avatarPlaceholder');
+    const deleteBtn = document.getElementById('avatarDelete');
+    const fileInput = document.getElementById('avatarFile');
+    const fileNameEl = document.getElementById('avatarFileName');
+    const errorEl = document.getElementById('avatarError');
+    const form = document.getElementById('avatarForm');
+    const saveBtn = document.getElementById('avatarSaveBtn') || form?.querySelector('[type="submit"]');
+
+    if (resetInput) {
+        if (fileInput) fileInput.value = '';
+        if (fileNameEl) {
+            fileNameEl.textContent = '';
+            fileNameEl.classList.add('hidden');
+        }
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+    }
+
+    const hasPendingFile = Boolean(!resetInput && fileInput?.files?.length);
+
+    if (!hasPendingFile) {
+        if (user?.avatar_url) {
+            if (preview) {
+                preview.src = user.avatar_url;
+                preview.classList.remove('hidden');
+            }
+            placeholder?.classList.add('hidden');
+        } else {
+            if (preview) {
+                preview.removeAttribute('src');
+                preview.classList.add('hidden');
+            }
+            if (placeholder) {
+                placeholder.textContent = getUserInitial(user);
+                placeholder.classList.remove('hidden');
+            }
+        }
+        if (saveBtn) saveBtn.disabled = true;
+    }
+
+    if (deleteBtn) {
+        deleteBtn.classList.toggle('hidden', !user?.avatar_url);
+    }
+}
+
+export function syncProfileSettingsModal(user = getCurrentUser()) {
+    const usernameEl = document.getElementById('profileSettingsUsername');
+    const emailEl = document.getElementById('profileSettingsEmail');
+    const bioEl = document.getElementById('profileSettingsBio');
+    const avatarImg = document.getElementById('profileSettingsAvatarImg');
+    const avatarFallback = document.getElementById('profileSettingsAvatarFallback');
+    const avatarStatus = document.getElementById('profileSettingsAvatarStatus');
+    const googleBadge = document.getElementById('profileSettingsGoogleBadge');
+    const googleLinkBtn = document.getElementById('profileSettingsGoogleLinkBtn');
+    const googleText = document.getElementById('profileSettingsGoogleText');
+
+    if (usernameEl) usernameEl.textContent = user?.username || 'Користувач';
+    if (emailEl) emailEl.textContent = user?.email || 'Email не вказано';
+
+    if (bioEl) {
+        if (user?.user_bio) {
+            bioEl.textContent = user.user_bio;
+            bioEl.classList.remove('hidden');
+        } else {
+            bioEl.textContent = '';
+            bioEl.classList.add('hidden');
+        }
+    }
+
+    if (user?.avatar_url) {
+        if (avatarImg) {
+            avatarImg.src = user.avatar_url;
+            avatarImg.classList.remove('hidden');
+        }
+        avatarFallback?.classList.add('hidden');
+        if (avatarStatus) avatarStatus.textContent = 'Встановлено власне фото профілю';
+    } else {
+        if (avatarImg) {
+            avatarImg.removeAttribute('src');
+            avatarImg.classList.add('hidden');
+        }
+        if (avatarFallback) {
+            avatarFallback.textContent = getUserInitial(user);
+            avatarFallback.classList.remove('hidden');
+        }
+        if (avatarStatus) avatarStatus.textContent = 'JPEG, PNG або WebP до 2 МБ';
+    }
+
+    const googleLinked = Boolean(user?.google_linked);
+    googleBadge?.classList.toggle('hidden', !googleLinked);
+    googleLinkBtn?.classList.toggle('hidden', googleLinked);
+    if (googleText) {
+        googleText.textContent = googleLinked
+            ? 'Ваш акаунт пов’язано з Google'
+            : 'Швидкий вхід через Google';
+    }
+}
+
+export function setUserDropdownOpen(open) {
+    const button = document.getElementById('userMenuBtn');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    menu.classList.toggle('hidden', !open);
+    button.setAttribute('aria-expanded', String(open));
+    const chevron = button.querySelector('[data-dropdown-chevron]');
+    chevron?.classList.toggle('rotate-180', open);
+}
+
+export function closeUserDropdown() {
+    setUserDropdownOpen(false);
+}
+
+function setHeaderMobileMenuOpen(open) {
+    const toggle = document.getElementById('headerMenuToggle');
+    const menu = document.getElementById('headerMenu');
+    if (!toggle || !menu) return;
+    if (toggle.classList.contains('hidden')) return;
+
+    const icon = toggle.querySelector('i');
+    menu.classList.toggle('hidden', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Закрити меню' : 'Відкрити меню');
+    icon?.classList.toggle('fa-bars', !open);
+    icon?.classList.toggle('fa-xmark', open);
+}
+
 export function openModal(id) {
+    if (id === 'avatarModal') {
+        syncAvatarModal(getCurrentUser(), true);
+    } else if (id === 'profileSettingsModal') {
+        syncProfileSettingsModal(getCurrentUser());
+    }
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove('hidden');
+        if (el.classList.contains('modal-backdrop')) {
+            el.classList.add('flex');
+        }
     }
 }
 
@@ -30,52 +189,259 @@ export function closeModal(id) {
     if (el) {
         el.classList.add('hidden');
     }
+    if (id === 'avatarModal') {
+        syncAvatarModal(getCurrentUser(), true);
+    }
 }
 
-export function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+function bindGlobalUiListeners() {
+    if (globalUiListenersBound) return;
+    globalUiListenersBound = true;
+
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+
+        // Profile dropdown toggle & actions
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        const userDropdownContainer = document.getElementById('userDropdownContainer');
+
+        if (userMenuBtn && target.closest('#userMenuBtn')) {
+            const isExpanded = userMenuBtn.getAttribute('aria-expanded') === 'true';
+            setUserDropdownOpen(!isExpanded);
+            return;
+        }
+
+        if (userDropdownMenu && !userDropdownMenu.classList.contains('hidden')) {
+            if (!userDropdownContainer?.contains(target) || target.closest('[role="menuitem"], [data-modal-open], #logoutBtn')) {
+                setUserDropdownOpen(false);
+            }
+        }
+
+        // Mobile guest header menu toggle
+        const headerToggle = document.getElementById('headerMenuToggle');
+        if (headerToggle && !headerToggle.classList.contains('hidden')) {
+            if (target.closest('#headerMenuToggle')) {
+                const isOpen = headerToggle.getAttribute('aria-expanded') === 'true';
+                setHeaderMobileMenuOpen(!isOpen);
+            } else {
+                const header = headerToggle.closest('header');
+                if ((header && !header.contains(target)) || target.closest('[data-modal-open], #logoutBtn')) {
+                    setHeaderMobileMenuOpen(false);
+                }
+            }
+        }
+
+        // Modals open / close / backdrop click
+        const closeButton = target.closest('[data-modal-close]');
+        const openButton = target.closest('[data-modal-open]');
+        if (closeButton) closeModal(closeButton.dataset.modalClose);
+        if (openButton) openModal(openButton.dataset.modalOpen);
+        if (target.classList.contains('modal-backdrop')) {
+            if (target.id) {
+                closeModal(target.id);
+            } else {
+                target.classList.add('hidden');
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        const isDropdownOpen = userMenuBtn?.getAttribute('aria-expanded') === 'true' && userDropdownMenu && !userDropdownMenu.classList.contains('hidden');
+
+        if (event.key === 'Escape') {
+            if (isDropdownOpen) {
+                event.preventDefault();
+                setUserDropdownOpen(false);
+                userMenuBtn.focus();
+                return;
+            }
+
+            const headerToggle = document.getElementById('headerMenuToggle');
+            if (headerToggle && !headerToggle.classList.contains('hidden') && headerToggle.getAttribute('aria-expanded') === 'true') {
+                setHeaderMobileMenuOpen(false);
+                headerToggle.focus();
+            }
+            return;
+        }
+
+        if (!userMenuBtn || !userDropdownMenu) return;
+
+        const items = Array.from(userDropdownMenu.querySelectorAll('[role="menuitem"]:not([disabled])'));
+        if (!items.length) return;
+
+        if (document.activeElement === userMenuBtn && (event.key === 'ArrowDown' || event.key === ' Down')) {
+            event.preventDefault();
+            setUserDropdownOpen(true);
+            items[0].focus();
+            return;
+        }
+
+        if (isDropdownOpen && userDropdownMenu.contains(document.activeElement)) {
+            const currentIndex = items.indexOf(document.activeElement);
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                items[nextIndex].focus();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                items[prevIndex].focus();
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                items[0].focus();
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                items[items.length - 1].focus();
+            }
+        }
+    });
+}
+
+function syncHeaderLayoutForAuth(authenticated) {
+    const toggle = document.getElementById('headerMenuToggle');
+    const menu = document.getElementById('headerMenu');
+
+    if (authenticated) {
+        if (toggle) {
+            toggle.classList.add('hidden');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+        if (menu) {
+            menu.classList.remove('hidden', 'basis-full', 'border-t', 'border-slate-200', 'py-3', 'order-3');
+            menu.classList.add('order-2', 'flex', 'items-center', 'shrink-0');
+        }
+    } else {
+        if (toggle) {
+            toggle.classList.remove('hidden');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Відкрити меню');
+            const icon = toggle.querySelector('i');
+            icon?.classList.add('fa-bars');
+            icon?.classList.remove('fa-xmark');
+        }
+        if (menu) {
+            menu.classList.remove('order-2', 'shrink-0');
+            menu.classList.add('order-3', 'hidden', 'basis-full', 'border-t', 'border-slate-200', 'py-3');
+        }
+    }
 }
 
 export function renderUserState(currentUser, authToken) {
+    bindGlobalUiListeners();
+
     const stateDiv = document.getElementById('userState');
+    const authenticated = Boolean(authToken);
+
+    syncHeaderLayoutForAuth(authenticated);
+
     if (!stateDiv) return;
 
-    if (authToken && currentUser) {
+    if (authenticated) {
+        const user = currentUser || { username: 'Користувач', email: '' };
+        const username = user.username || 'Користувач';
+        const email = user.email || 'Авторизований акаунт';
+        const initial = getUserInitial(user);
+        const showGoogleLink = !user.google_linked;
+
+        const triggerAvatarMarkup = user.avatar_url
+            ? `<img id="headerUserAvatar" src="${escapeHtml(user.avatar_url)}" alt="${escapeHtml(username)}" class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-indigo-100 shadow-2xs">`
+            : `<span id="headerUserAvatarFallback" data-avatar-fallback class="h-9 w-9 shrink-0 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm uppercase ring-2 ring-indigo-50 shadow-inner select-none">${escapeHtml(initial)}</span>`;
+
+        const menuHeaderAvatarMarkup = user.avatar_url
+            ? `<img src="${escapeHtml(user.avatar_url)}" alt="${escapeHtml(username)}" class="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-slate-100">`
+            : `<span class="h-10 w-10 shrink-0 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm uppercase ring-2 ring-slate-100 select-none">${escapeHtml(initial)}</span>`;
+
         stateDiv.innerHTML = `
-            <div class="flex w-full min-w-0 lg:w-auto items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-                ${currentUser.avatar_url
-                    ? `<img src="${escapeHtml(currentUser.avatar_url)}" alt="" class="h-7 w-7 shrink-0 rounded-full object-cover">`
-                    : `<div class="w-7 h-7 shrink-0 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase">${escapeHtml((currentUser.username || 'U')[0])}</div>`}
-                <span class="min-w-0 flex-1 text-xs font-semibold text-slate-800 lg:max-w-[120px] truncate">${escapeHtml(currentUser.username)}</span>
-                <button type="button" data-modal-open="avatarModal" class="text-xs text-indigo-600">Фото</button>
-                <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
-                <button id="logoutBtn" type="button" title="Вийти з акаунту" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
-                    <span>Вийти</span>
+            <div id="userDropdownContainer" class="relative inline-flex items-center">
+                <button
+                    id="userMenuBtn"
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="userDropdownMenu"
+                    aria-label="Меню профілю ${escapeHtml(username)}"
+                    class="group inline-flex items-center gap-1.5 rounded-full p-1 pr-2 text-sm font-medium text-slate-700 hover:bg-slate-100 active:bg-slate-200/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors cursor-pointer"
+                >
+                    ${triggerAvatarMarkup}
+                    <i data-dropdown-chevron class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200" aria-hidden="true"></i>
                 </button>
-            </div>
-        `;
-    } else if (authToken) {
-        stateDiv.innerHTML = `
-            <div class="flex w-full min-w-0 lg:w-auto items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-                <div class="w-6 h-6 shrink-0 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                    <i class="fa-solid fa-key text-[10px]"></i>
+
+                <div
+                    id="userDropdownMenu"
+                    role="menu"
+                    aria-labelledby="userMenuBtn"
+                    aria-label="Меню облікового запису"
+                    class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-72 origin-top-right rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200/90 z-50"
+                >
+                    <div class="flex items-center gap-3 px-3 py-3 border-b border-slate-100 mb-1">
+                        ${menuHeaderAvatarMarkup}
+                        <div class="min-w-0 flex-1">
+                            <p id="userDropdownName" class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(username)}</p>
+                            <p id="userDropdownEmail" class="text-xs text-slate-500 truncate">${escapeHtml(email)}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-0.5 py-1" role="none">
+                        <button
+                            type="button"
+                            id="profileSettingsMenuBtn"
+                            role="menuitem"
+                            data-modal-open="profileSettingsModal"
+                            class="w-full min-h-11 flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-indigo-50/70 hover:text-indigo-600 focus-visible:bg-indigo-50/70 focus-visible:text-indigo-600 focus-visible:outline-hidden rounded-xl transition-colors cursor-pointer text-left"
+                        >
+                            <i class="fa-solid fa-user-gear w-4 text-center text-slate-400" aria-hidden="true"></i>
+                            <span>Налаштування профілю</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="changeAvatarMenuBtn"
+                            role="menuitem"
+                            data-modal-open="avatarModal"
+                            class="w-full min-h-11 flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-indigo-50/70 hover:text-indigo-600 focus-visible:bg-indigo-50/70 focus-visible:text-indigo-600 focus-visible:outline-hidden rounded-xl transition-colors cursor-pointer text-left"
+                        >
+                            <i class="fa-solid fa-camera w-4 text-center text-slate-400" aria-hidden="true"></i>
+                            <span>Змінити фотографію</span>
+                        </button>
+
+                        ${showGoogleLink ? `
+                        <button
+                            type="button"
+                            id="googleLinkMenuBtn"
+                            role="menuitem"
+                            data-modal-open="googleLinkModal"
+                            class="w-full min-h-11 flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-indigo-50/70 hover:text-indigo-600 focus-visible:bg-indigo-50/70 focus-visible:text-indigo-600 focus-visible:outline-hidden rounded-xl transition-colors cursor-pointer text-left"
+                        >
+                            <i class="fa-brands fa-google w-4 text-center text-slate-400" aria-hidden="true"></i>
+                            <span>Підключити Google</span>
+                        </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="my-1 border-t border-slate-100" role="separator"></div>
+
+                    <div class="pt-1" role="none">
+                        <button
+                            id="logoutBtn"
+                            type="button"
+                            role="menuitem"
+                            title="Вийти з акаунту"
+                            class="w-full min-h-11 flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:bg-rose-50 focus-visible:text-rose-700 focus-visible:outline-hidden rounded-xl transition-colors cursor-pointer text-left"
+                        >
+                            <i class="fa-solid fa-right-from-bracket w-4 text-center text-rose-500" aria-hidden="true"></i>
+                            <span>Вийти</span>
+                        </button>
+                    </div>
                 </div>
-                <span class="min-w-0 flex-1 truncate text-xs font-medium text-slate-700">Токен активний</span>
-                <button type="button" data-modal-open="avatarModal" class="text-xs text-indigo-600">Фото</button>
-                <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
-                <button id="logoutBtn" type="button" title="Вийти" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
-                    <span>Вийти</span>
-                </button>
             </div>
         `;
+
+        syncAvatarModal(user, false);
+        syncProfileSettingsModal(user);
     } else {
         stateDiv.innerHTML = `
             <div class="flex flex-wrap items-center gap-2">
@@ -89,45 +455,22 @@ export function renderUserState(currentUser, authToken) {
                 </button>
             </div>
         `;
+
+        syncAvatarModal(null, true);
+        syncProfileSettingsModal(null);
     }
 }
 
 export function initHeaderMenu() {
-    const toggle = document.getElementById('headerMenuToggle');
-    const menu = document.getElementById('headerMenu');
-    if (!toggle || !menu) return;
-    const header = toggle.closest('header');
-    const icon = toggle.querySelector('i');
-
-    function setOpen(open) {
-        menu.classList.toggle('hidden', !open);
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.setAttribute('aria-label', open ? 'Закрити меню' : 'Відкрити меню');
-        icon.classList.toggle('fa-bars', !open);
-        icon.classList.toggle('fa-xmark', open);
+    bindGlobalUiListeners();
+    if (!matchMediaBound) {
+        matchMediaBound = true;
+        window.matchMedia?.('(min-width: 64rem)')?.addEventListener?.('change', () => setHeaderMobileMenuOpen(false));
     }
-
-    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
-    document.addEventListener('click', (event) => {
-        if (!header.contains(event.target) || event.target.closest('[data-modal-open], #logoutBtn')) setOpen(false);
-    });
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
-            setOpen(false);
-            toggle.focus();
-        }
-    });
-    window.matchMedia('(min-width: 64rem)').addEventListener('change', () => setOpen(false));
 }
 
 export function initModals() {
-    document.addEventListener('click', (event) => {
-        const openButton = event.target.closest('[data-modal-open]');
-        const closeButton = event.target.closest('[data-modal-close]');
-        if (openButton) openModal(openButton.dataset.modalOpen);
-        if (closeButton) closeModal(closeButton.dataset.modalClose);
-        if (event.target.classList.contains('modal-backdrop')) event.target.classList.add('hidden');
-    });
+    bindGlobalUiListeners();
 }
 
 export function renderGuestState(container) {
