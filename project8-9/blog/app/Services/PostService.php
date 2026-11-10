@@ -19,7 +19,7 @@ class PostService
                 $post->tags()->sync($tagIds);
             }
 
-            $this->invalidateRecent();
+            DB::afterCommit(fn () => $this->invalidateRecent());
 
             return $post->load('tags');
         });
@@ -35,7 +35,7 @@ class PostService
                 $post->tags()->sync($tagIds);
             }
 
-            $this->invalidateRecent();
+            DB::afterCommit(fn () => $this->invalidateRecent());
 
             return $post->load('tags');
         });
@@ -43,8 +43,10 @@ class PostService
 
     public function delete(Post $post): void
     {
-        $post->delete();
-        $this->invalidateRecent();
+        DB::transaction(function () use ($post): void {
+            $post->delete();
+            DB::afterCommit(fn () => $this->invalidateRecent());
+        });
     }
 
     public function listRecent(int $limit): Collection
@@ -53,14 +55,13 @@ class PostService
             throw new \InvalidArgumentException('Limit must be between 1 and 100.');
         }
 
-        return Cache::remember("recent_posts:{$limit}", 45, fn () => Post::with(['user', 'tags'])->latest()->orderByDesc('id')->limit($limit)->get()
+        return Cache::remember('recent_posts:'.Cache::get('recent_posts:version', 0).":{$limit}", 45, fn () => Post::with(['user', 'tags'])->latest()->orderByDesc('id')->limit($limit)->get()
         );
     }
 
     private function invalidateRecent(): void
     {
-        for ($limit = 1; $limit <= 100; $limit++) {
-            Cache::forget("recent_posts:{$limit}");
-        }
+        Cache::add('recent_posts:version', 0);
+        Cache::increment('recent_posts:version');
     }
 }

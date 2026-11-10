@@ -5,15 +5,29 @@ $app = require dirname(__DIR__).'/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use App\Models\Post;
-use App\Models\User;
 use App\Services\PostService;
 use Illuminate\Support\Facades\DB;
 
-$user = User::firstOrFail();
+$approvedPath = getenv('LAB7_BENCH_DB_PATH');
+$databasePath = config('database.connections.sqlite.database');
+$tempDirectories = array_filter([realpath(sys_get_temp_dir()), realpath('/tmp')]);
+$inTemporaryDirectory = is_string($approvedPath) && is_file($approvedPath)
+    && count(array_filter($tempDirectories, fn ($directory) => str_starts_with(realpath($approvedPath), $directory.DIRECTORY_SEPARATOR))) > 0;
+if (! app()->environment('local', 'testing')
+    || config('database.default') !== 'sqlite'
+    || config('cache.default') !== 'array'
+    || ! is_string($approvedPath)
+    || ! is_string($databasePath)
+    || ! is_file($approvedPath)
+    || is_link($approvedPath)
+    || realpath($approvedPath) !== realpath($databasePath)
+    || ! $inTemporaryDirectory) {
+    fwrite(STDERR, "Refusing benchmark: require local/testing, SQLite file in system temp, CACHE_STORE=array, and matching LAB7_BENCH_DB_PATH.\n");
+    exit(1);
+}
 if (Post::count() === 0) {
-    for ($i = 1; $i <= 100; $i++) {
-        Post::create(['user_id' => $user->id, 'header' => "Benchmark article $i", 'description' => str_repeat('Text ', 20)]);
-    }
+    fwrite(STDERR, "Refusing benchmark: the approved database has no articles. Seed isolated fixture data separately.\n");
+    exit(1);
 }
 $posts = Post::latest()->limit(15)->get();
 $queryCount = 0;
@@ -28,9 +42,9 @@ $naive = ['queries' => $queryCount, 'elapsed_ms' => round((microtime(true) - $st
 $queryCount = 0;
 $start = microtime(true);
 $counts = DB::table('posts')->selectRaw('user_id, COUNT(*) AS cnt')->whereNull('deleted_at')->whereIn('user_id', $posts->pluck('user_id')->unique())->groupBy('user_id')->pluck('cnt', 'user_id');
-$grouped = ['queries' => $queryCount, 'elapsed_ms' => round((microtime(true) - $start) * 1000, 3), 'count_for_author' => $counts[$user->id]];
+$grouped = ['queries' => $queryCount, 'elapsed_ms' => round((microtime(true) - $start) * 1000, 3), 'count_for_author' => $counts[$posts->first()->user_id] ?? null];
 $index = DB::select("PRAGMA index_list('posts')");
-$explain = DB::select('EXPLAIN QUERY PLAN SELECT * FROM posts WHERE user_id = ?', [$user->id]);
+$explain = DB::select('EXPLAIN QUERY PLAN SELECT * FROM posts WHERE user_id = ?', [$posts->first()->user_id]);
 $service = app(PostService::class);
 $queryCount = 0;
 $start = microtime(true);
