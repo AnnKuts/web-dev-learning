@@ -14,6 +14,16 @@
         <p id="viewPostTags" class="text-xs font-medium text-indigo-700 break-words mb-5"></p>
         <div id="viewPostDescription" class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words"></div>
     </article>
+    <section id="commentsSection" class="mt-8" aria-label="Коментарі">
+        <h2 class="mb-4 text-xl font-bold text-slate-900">Коментарі</h2>
+        <form id="commentForm" class="mb-5 space-y-2">
+            <label for="commentContent" class="block text-sm font-medium text-slate-700">Ваш коментар</label>
+            <textarea id="commentContent" required maxlength="2000" rows="3" class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+            <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Опублікувати коментар</button>
+        </form>
+        <div id="commentsList" class="space-y-3" aria-live="polite"></div>
+        <button id="commentsMore" type="button" class="mt-4 hidden text-sm font-semibold text-indigo-700 hover:underline">Наступні коментарі</button>
+    </section>
     <section id="publishedPosts" class="hidden mt-8" aria-label="Список статей">
         @include('partials.posts.list')
     </section>

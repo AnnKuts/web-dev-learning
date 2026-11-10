@@ -1,4 +1,5 @@
 import { initAuth } from './auth.js';
+import { initComments, loadComments } from './comments.js';
 import { initPosts, loadPosts, loadPost, clearPostTagFilter } from './posts.js';
 import { initPostForms, startEditPost } from './post-form.js';
 import { initTags, loadTags, loadTagsForSelects } from './tags.js';
@@ -27,6 +28,8 @@ function refreshCurrentTab(page) {
             document.getElementById('viewPostMeta').textContent = '';
             document.getElementById('viewPostTags').textContent = '';
             renderGuestState(document.getElementById('viewPostDescription'));
+            renderGuestState(document.getElementById('commentsList'));
+            document.getElementById('commentForm')?.classList.add('hidden');
         }
         document.getElementById('postsPagination')?.replaceChildren();
         document.getElementById('usersPagination')?.replaceChildren();
@@ -34,7 +37,9 @@ function refreshCurrentTab(page) {
     }
     const postPage = document.getElementById('postDetail');
     if (postPage) {
+        document.getElementById('commentForm')?.classList.remove('hidden');
         loadPost(postPage.dataset.postId);
+        loadComments(postPage.dataset.postId);
         if (!document.getElementById('publishedPosts').classList.contains('hidden')) loadPosts(page);
         return;
     }
@@ -89,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         switchTab('posts', page);
     });
+    initComments();
     initPosts(startEditPost, () => switchTab('posts', 1));
     initTags(refreshCurrentTab);
     initUsers();
