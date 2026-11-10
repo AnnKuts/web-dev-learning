@@ -1,6 +1,7 @@
 <div id="loginModal" class="modal-backdrop fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-5 sm:p-6 relative">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Авторизація</h2>
+        @include('partials.modals.google-sign-in')
         <form id="loginForm" class="space-y-4">
             <div>
                 <label for="loginEmail" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -10,21 +11,18 @@
                 <label for="loginPassword" class="block text-sm font-medium text-slate-700 mb-1">Пароль</label>
                 <input type="password" id="loginPassword" required autocomplete="current-password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             </div>
-            <div class="flex justify-end space-x-2 pt-2">
+            <div class="flex flex-wrap justify-end gap-2 pt-2">
                 <button type="button" data-modal-close="loginModal" class="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50">Скасувати</button>
                 <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm">Увійти</button>
             </div>
         </form>
-        @if(config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'))
-            <button type="button" data-google-login class="w-full mt-4 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">Continue with Google</button>
-        @endif
-
     </div>
 </div>
 
 <div id="registerModal" class="modal-backdrop fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-5 sm:p-6 relative">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Реєстрація</h2>
+        @include('partials.modals.google-sign-in')
         <form id="registerForm" class="space-y-4">
             <div>
                 <label for="regUsername" class="block text-sm font-medium text-slate-700 mb-1">Username</label>
@@ -46,15 +44,11 @@
                 <label for="regBio" class="block text-sm font-medium text-slate-700 mb-1">Біографія (опціонально)</label>
                 <textarea id="regBio" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></textarea>
             </div>
-            <div class="flex justify-end space-x-2 pt-2">
+            <div class="flex flex-wrap justify-end gap-2 pt-2">
                 <button type="button" data-modal-close="registerModal" class="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50">Скасувати</button>
                 <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm">Зареєструватися</button>
             </div>
         </form>
-        @if(config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'))
-            <button type="button" data-google-login class="w-full mt-4 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">Continue with Google</button>
-        @endif
-
     </div>
 </div>
 
