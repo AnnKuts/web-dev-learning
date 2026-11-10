@@ -22,7 +22,7 @@
 
         <div id="headerMenu" class="hidden basis-full min-w-0 flex flex-col gap-3 border-t border-slate-200 py-3 lg:basis-auto lg:flex lg:flex-row lg:items-center lg:border-0 lg:py-0">
             <div id="userState" class="min-w-0 text-sm font-medium text-slate-600 flex items-center"></div>
-            <button type="button" data-modal-open="newPostModal" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm shadow-indigo-200 flex items-center justify-center space-x-1.5 whitespace-nowrap">
+            <button type="button" data-modal-open="newPostModal" class="w-full lg:w-auto min-h-11 shrink-0 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-200 active:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 flex items-center justify-center space-x-2 whitespace-nowrap">
                 <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
                 <span>Створити статтю</span>
             </button>
