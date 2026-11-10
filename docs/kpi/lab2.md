@@ -59,4 +59,4 @@ POST-запити до `/api/posts` спрямовуються через мар
 
 *Проходження тестів*
 
-Тести серверної валідації знаходяться у [`AuthModeTest.php`](../../project8-9/blog/tests/Feature/AuthModeTest.php) (метод `test_post_validation_rules_for_variant_3()`), а перевірки клієнтської валідації, обробки помилок і роботи чернетки у [`blog.test.js`](../../project8-9/blog/tests/Frontend/blog.test.js)
+Тести серверної валідації знаходяться у [`AuthModeTest.php`](../../project8-9/blog/tests/Feature/AuthModeTest.php) (метод `test_post_validation_rules_for_variant_3()`), а перевірки клієнтської валідації, обробки помилок і роботи чернетки у [`blog.test.js`](../../project8-9/blog/tests/Frontend/blog.test.js) (Vitest + jsdom). Frontend-тести запускаються командою `npm test`, PHP Feature-тести залишаються на PHPUnit і запускаються через `php artisan test`.
