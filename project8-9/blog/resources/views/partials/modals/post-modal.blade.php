@@ -1,5 +1,5 @@
 <div id="newPostModal" class="modal-backdrop fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:p-6 relative">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h2 class="text-lg font-bold text-slate-900">Нова стаття</h2>
@@ -27,7 +27,7 @@
 </div>
 
 <div id="editPostModal" class="modal-backdrop fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:p-6 relative">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Редагувати статтю</h2>
         <form id="editPostForm" class="space-y-4" novalidate>
             <input type="hidden" id="editPostId">

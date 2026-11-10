@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach, expect, vi } from 'vitest';
 import { saveArticleDraft, restoreArticleDraft, DRAFT_STORAGE_KEY } from '../../resources/js/storage.js';
-import { fetchAllTags, readResponse, setAuth, clearAuth } from '../../resources/js/api.js';
+import { createPost, updatePost, fetchAllTags, readResponse, setAuth, clearAuth } from '../../resources/js/api.js';
 import { initPostForms } from '../../resources/js/post-form.js';
 import { loadPosts, loadPost } from '../../resources/js/posts.js';
 import { escapeHtml } from '../../resources/js/ui.js';
@@ -25,6 +25,7 @@ beforeEach(() => {
                     <label><input type="checkbox" name="tags" value="18" checked>Laravel</label>
                 </div>
                 <p id="postTagsError" class="hidden"></p>
+                <input id="postImages" type="file" multiple><div id="postImagePreview"></div>
                 <button id="clearDraftBtn" type="button">Очистити чернетку</button>
                 <button id="submitPostBtn" type="submit">Опублікувати</button>
             </form>
@@ -40,6 +41,7 @@ beforeEach(() => {
                     <label><input type="checkbox" name="tags" value="18" checked>Laravel</label>
                 </div>
                 <p id="editPostTagsError" class="hidden"></p>
+                <input id="editPostImages" type="file" multiple><div id="editPostImagePreview"></div><div id="editPostExistingImages"></div>
                 <button id="submitEditPostBtn" type="submit">Зберегти зміни</button>
             </form>
         </div>
@@ -117,6 +119,29 @@ test('fetches every tag page and stops at last_page', async () => {
     }));
     expect(await fetchAllTags()).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
     expect(urls).toEqual(['/api/tags?page=1', '/api/tags?page=2', '/api/tags?page=3']);
+});
+
+test('article images use multipart upload while ordinary edits retain JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ data: { id: 7 } })));
+    const image = new File(['image bytes'], 'picture.png', { type: 'image/png' });
+    await createPost({ header: 'Article', description: 'Long enough article description', tags: [18], images: [image] });
+    const [createUrl, createOptions] = fetch.mock.calls[0];
+    expect(createUrl).toBe('/api/posts');
+    expect(createOptions.body).toBeInstanceOf(FormData);
+    expect(createOptions.body.get('images[]')).toBe(image);
+    expect(createOptions.headers['Content-Type']).toBeUndefined();
+
+    await updatePost(7, { header: 'Changed', description: 'Long enough article description', tags: [], images: [image], remove_images: [3] });
+    const [, editOptions] = fetch.mock.calls[1];
+    expect(editOptions.method).toBe('POST');
+    expect(editOptions.body.get('_method')).toBe('PUT');
+    expect(editOptions.body.get('remove_images[]')).toBe('3');
+    expect(editOptions.body.get('clear_tags')).toBe('1');
+
+    await updatePost(7, { header: 'Changed', description: 'Long enough article description', tags: [], images: [], remove_images: [3] });
+    const [, jsonOptions] = fetch.mock.calls[2];
+    expect(jsonOptions.method).toBe('PUT');
+    expect(JSON.parse(jsonOptions.body).remove_images).toEqual([3]);
 });
 
 test.each([401, 403, 422, 'network'])('failed publication (%s) preserves fields, tags and draft', async status => {

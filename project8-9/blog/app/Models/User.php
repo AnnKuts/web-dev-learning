@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\ImageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -17,7 +18,7 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
-        'user_bio'
+        'user_bio',
     ];
 
     protected $hidden = [
@@ -34,13 +35,18 @@ class User extends Authenticatable
         ];
     }
 
-  public function comments(): HasMany
-  {
-      return $this->hasMany(Comment::class);
-  }
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return app(ImageService::class)->url($this->avatar_path);
+    }
 
-  public function posts(): HasMany
-  {
-      return $this->hasMany(Post::class);
-  }
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
 }

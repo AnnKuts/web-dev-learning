@@ -21,6 +21,9 @@ class PostResource extends JsonResource
             'updated_at' => $this->updated_at,
             'user' => new UserResource($this->whenLoaded('user')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
+            'images' => $this->whenLoaded('images', fn () => $this->images->map(fn ($image) => [
+                'id' => $image->id, 'url' => $image->url, 'display_order' => $image->display_order,
+            ])),
         ];
     }
 }

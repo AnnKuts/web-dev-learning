@@ -43,4 +43,12 @@
     <div id="{{ $tagsContainerId }}" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 border border-slate-200 rounded-lg bg-slate-50"></div>
     <p id="{{ $tagsErrorId }}" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
 </div>
+<div>
+    <label for="{{ $prefix }}Images" class="block text-sm font-medium text-slate-700 mb-1">Зображення (до 5, JPEG/PNG/WebP, до 5 МБ кожне)</label>
+    <input type="file" id="{{ $prefix }}Images" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-sm text-slate-600">
+    <div id="{{ $prefix }}ImagePreview" class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5"></div>
+    @unless($isPost)
+        <div id="editPostExistingImages" class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5"></div>
+    @endunless
+</div>
 <p id="{{ $prefix }}FormError" role="alert" class="hidden rounded-lg bg-rose-50 p-3 text-sm text-rose-600"></p>

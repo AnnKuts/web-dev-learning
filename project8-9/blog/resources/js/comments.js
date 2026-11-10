@@ -53,9 +53,10 @@ export function initComments() {
         const button = event.currentTarget.querySelector('[type=submit]');
         button.disabled = true;
         try {
-            await readResponse(await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ content: field.value.trim() }) }));
+            const result = await readResponse(await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ content: field.value.trim() }) }));
             field.value = '';
-            await loadComments(postId);
+            comments.push(result.data);
+            render();
         } catch (error) { showToast(error.message, true); }
         finally { button.disabled = false; }
     });

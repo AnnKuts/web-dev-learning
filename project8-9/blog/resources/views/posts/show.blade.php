@@ -13,6 +13,7 @@
         <p id="viewPostMeta" class="flex flex-wrap items-center gap-3 text-xs text-slate-400 mb-3"></p>
         <p id="viewPostTags" class="text-xs font-medium text-indigo-700 break-words mb-5"></p>
         <div id="viewPostDescription" class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words"></div>
+        <div id="viewPostImages" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3"></div>
     </article>
     <section id="commentsSection" class="mt-8" aria-label="Коментарі">
         <h2 class="mb-4 text-xl font-bold text-slate-900">Коментарі</h2>

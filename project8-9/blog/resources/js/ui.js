@@ -49,10 +49,11 @@ export function renderUserState(currentUser, authToken) {
     if (authToken && currentUser) {
         stateDiv.innerHTML = `
             <div class="flex w-full min-w-0 lg:w-auto items-center space-x-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-                <div class="w-6 h-6 shrink-0 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase shadow-inner">
-                    ${escapeHtml((currentUser.username || 'U')[0])}
-                </div>
+                ${currentUser.avatar_url
+                    ? `<img src="${escapeHtml(currentUser.avatar_url)}" alt="" class="h-7 w-7 shrink-0 rounded-full object-cover">`
+                    : `<div class="w-7 h-7 shrink-0 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase">${escapeHtml((currentUser.username || 'U')[0])}</div>`}
                 <span class="min-w-0 flex-1 text-xs font-semibold text-slate-800 lg:max-w-[120px] truncate">${escapeHtml(currentUser.username)}</span>
+                <button type="button" data-modal-open="avatarModal" class="text-xs text-indigo-600">Фото</button>
                 <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
                 <button id="logoutBtn" type="button" title="Вийти з акаунту" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
@@ -67,6 +68,7 @@ export function renderUserState(currentUser, authToken) {
                     <i class="fa-solid fa-key text-[10px]"></i>
                 </div>
                 <span class="min-w-0 flex-1 truncate text-xs font-medium text-slate-700">Токен активний</span>
+                <button type="button" data-modal-open="avatarModal" class="text-xs text-indigo-600">Фото</button>
                 <button type="button" data-modal-open="googleLinkModal" class="text-xs text-indigo-600">Підключити Google</button>
                 <button id="logoutBtn" type="button" title="Вийти" class="shrink-0 inline-flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-lg transition-all active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>

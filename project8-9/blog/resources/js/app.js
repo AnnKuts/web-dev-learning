@@ -1,5 +1,6 @@
 import { initAuth } from './auth.js';
 import { initComments, loadComments } from './comments.js';
+import { initAvatar } from './avatar.js';
 import { initPosts, loadPosts, loadPost, clearPostTagFilter } from './posts.js';
 import { initPostForms, startEditPost } from './post-form.js';
 import { initTags, loadTags, loadTagsForSelects } from './tags.js';
@@ -94,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         switchTab('posts', page);
     });
+    initAvatar();
     initComments();
     initPosts(startEditPost, () => switchTab('posts', 1));
     initTags(refreshCurrentTab);

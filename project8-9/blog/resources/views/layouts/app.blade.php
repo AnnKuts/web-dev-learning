@@ -29,5 +29,6 @@
     @include('partials.modals.post-modal')
     @include('partials.modals.tag-modal')
     @include('partials.modals.auth-modals')
+    @include('partials.modals.avatar-modal')
 </body>
 </html>

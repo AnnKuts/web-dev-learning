@@ -27,11 +27,13 @@ export async function loadPost(id) {
     const description = document.getElementById('viewPostDescription');
     const meta = document.getElementById('viewPostMeta');
     const tags = document.getElementById('viewPostTags');
+    const images = document.getElementById('viewPostImages');
     if (!getAuthToken()) {
         postRequest?.abort();
         header.textContent = '';
         meta.textContent = '';
         tags.textContent = '';
+        if (images) images.replaceChildren();
         renderGuestState(description);
         return;
     }
@@ -39,6 +41,7 @@ export async function loadPost(id) {
     description.textContent = '';
     meta.textContent = '';
     tags.textContent = '';
+    if (images) images.replaceChildren();
     try {
         const json = await readResponse(await fetchPost(id, request.signal));
         if (request.signal.aborted) return;
@@ -46,10 +49,11 @@ export async function loadPost(id) {
         header.textContent = post.header;
         description.textContent = post.description;
         meta.innerHTML = `
-            <span><i class="fa-solid fa-user mr-1" aria-hidden="true"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
+            <span class="inline-flex items-center gap-1">${post.user?.avatar_url ? `<img src="${escapeHtml(post.user.avatar_url)}" alt="" loading="lazy" class="h-6 w-6 rounded-full object-cover">` : '<i class="fa-solid fa-user" aria-hidden="true"></i>'}${escapeHtml(post.user?.username || 'Невідомий')}</span>
             <span><i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
         `;
         tags.innerHTML = (post.tags || []).map(tag => `<a href="/?tag=${tag.id}" data-action="filter-tag" class="hover:underline">#${escapeHtml(tag.tag_name)}</a>`).join(' ');
+        if (images) images.innerHTML = (post.images || []).map(image => `<a href="${escapeHtml(image.url)}" target="_blank" rel="noopener noreferrer" aria-label="Відкрити зображення статті"><img src="${escapeHtml(image.url)}" alt="Зображення статті" loading="lazy" class="aspect-square w-full rounded-xl object-cover hover:opacity-90"></a>`).join('');
     } catch (error) {
         if (request.signal.aborted) return;
         if (error.status === 401 && !getAuthToken()) {
@@ -129,7 +133,7 @@ export async function loadPosts(page = currentPostPage) {
                         </div>
 
                         <div class="flex items-center space-x-3 text-xs text-slate-400">
-                            <span class="font-medium text-slate-600"><i class="fa-solid fa-user mr-1 text-slate-500"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
+                            <span class="inline-flex items-center gap-1 font-medium text-slate-600">${post.user?.avatar_url ? `<img src="${escapeHtml(post.user.avatar_url)}" alt="" loading="lazy" class="h-6 w-6 rounded-full object-cover">` : '<i class="fa-solid fa-user text-slate-500"></i>'}${escapeHtml(post.user?.username || 'Невідомий')}</span>
                             <span><i class="fa-regular fa-clock mr-1 text-slate-400"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
                         </div>
                     </div>

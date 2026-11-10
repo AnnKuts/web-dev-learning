@@ -17,7 +17,9 @@ class StorePostRequest extends FormRequest
             'header' => 'required|string|min:5|max:100',
             'description' => 'required|string|min:20',
             'tags' => 'array',
-            'tags.*' => 'exists:tags,id'
+            'tags.*' => 'exists:tags,id',
+            'images' => ['sometimes', 'array', 'max:5'],
+            'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
         ];
     }
 
