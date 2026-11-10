@@ -95,7 +95,7 @@ class ProfileTest extends TestCase
 
     public function test_invalid_usernames_are_rejected(): void
     {
-        $existing = User::factory()->create(['username' => 'TakenUsername']);
+        $existing = User::factory()->create(['username' => 'Ann Kuts']);
         $user = User::factory()->create(['username' => 'MyUsername']);
 
         Sanctum::actingAs($user);
@@ -120,12 +120,12 @@ class ProfileTest extends TestCase
             'username' => str_repeat('a', 256),
         ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
 
-        // Duplicate username belonging to another user
+        $this->assertSame('MyUsername', $user->fresh()->username);
+
+        // Display names are not unnecessarily restricted to be unique across users
         $this->putJson("/api/users/{$user->id}", [
             'username' => $existing->username,
-        ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
-
-        $this->assertSame('MyUsername', $user->fresh()->username);
+        ])->assertOk()->assertJsonPath('data.username', 'Ann Kuts');
     }
 
     public function test_email_and_google_id_cannot_be_modified_through_profile_endpoint(): void

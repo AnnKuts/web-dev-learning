@@ -1,9 +1,17 @@
 <div id="profileSettingsModal" role="dialog" aria-modal="true" aria-labelledby="profileSettingsTitle" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
     <div class="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-white p-5 sm:p-6 shadow-xl relative">
         <div class="flex items-start justify-between gap-3 mb-5">
-            <div class="min-w-0">
-                <h2 id="profileSettingsTitle" class="text-lg font-bold text-slate-900">Налаштування профілю</h2>
-                <p class="text-xs text-slate-500 mt-0.5">Керування вашим обліковим записом</p>
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="relative shrink-0">
+                    <img id="profileSettingsAvatar" alt="Фото профілю" class="hidden h-12 w-12 rounded-full object-cover ring-2 ring-indigo-100 shadow-2xs">
+                    <div id="profileSettingsAvatarFallback" class="h-12 w-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base uppercase ring-2 ring-indigo-50 shadow-inner select-none">
+                        U
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <h2 id="profileSettingsTitle" class="text-lg font-bold text-slate-900">Налаштування профілю</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Керування вашим обліковим записом</p>
+                </div>
             </div>
             <button type="button" data-modal-close="profileSettingsModal" aria-label="Закрити" class="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors cursor-pointer">
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>

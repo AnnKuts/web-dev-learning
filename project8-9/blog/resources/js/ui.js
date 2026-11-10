@@ -110,10 +110,30 @@ export function syncProfileSettingsModal(user = getCurrentUser(), resetErrors = 
     const bioInput = document.getElementById('profileBio');
     const googleBadge = document.getElementById('profileSettingsGoogleBadge');
     const googleUnlinked = document.getElementById('profileSettingsGoogleUnlinked');
+    const avatarImg = document.getElementById('profileSettingsAvatar');
+    const avatarFallback = document.getElementById('profileSettingsAvatarFallback');
 
     if (usernameInput) usernameInput.value = user?.username || '';
     if (emailInput) emailInput.value = user?.email || '';
     if (bioInput) bioInput.value = user?.user_bio || '';
+
+    if (user?.avatar_url) {
+        if (avatarImg) {
+            avatarImg.src = user.avatar_url;
+            avatarImg.alt = user.username || 'Фото профілю';
+            avatarImg.classList.remove('hidden');
+        }
+        avatarFallback?.classList.add('hidden');
+    } else {
+        if (avatarImg) {
+            avatarImg.removeAttribute('src');
+            avatarImg.classList.add('hidden');
+        }
+        if (avatarFallback) {
+            avatarFallback.textContent = getUserInitial(user);
+            avatarFallback.classList.remove('hidden');
+        }
+    }
 
     if (resetErrors) {
         clearProfileErrors();

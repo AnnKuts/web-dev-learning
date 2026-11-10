@@ -28,8 +28,6 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = $this->route('user')?->id;
-
         return [
             'username' => [
                 'sometimes',
@@ -37,7 +35,6 @@ class UpdateUserRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:255',
-                Rule::unique('users', 'username')->ignore($userId),
             ],
             'user_bio' => [
                 'sometimes',

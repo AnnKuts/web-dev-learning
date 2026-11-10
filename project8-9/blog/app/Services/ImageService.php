@@ -3,17 +3,29 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 class ImageService
 {
+    private const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
     public function store(UploadedFile $file, string $folder, int $maxDimension): string
     {
         $realPath = $file->getRealPath();
         $bytes = $realPath ? @file_get_contents($realPath) : false;
         if (! is_string($bytes) || $bytes === '') {
+            throw new RuntimeException('Не вдалося прочитати завантажений файл зображення.');
+        }
+
+        return $this->storeBytes($bytes, $folder, $maxDimension);
+    }
+
+    public function storeBytes(string $bytes, string $folder, int $maxDimension): string
+    {
+        if ($bytes === '') {
             throw new RuntimeException('Не вдалося прочитати завантажений файл зображення.');
         }
         $info = @getimagesizefromstring($bytes);
@@ -51,6 +63,58 @@ class ImageService
         }
 
         return $path;
+    }
+
+    public function isTrustedGoogleAvatarUrl(string $url): bool
+    {
+        if ($url === '' || strlen($url) > 2048 || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        $parts = parse_url($url);
+        if (! is_array($parts)) {
+            return false;
+        }
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $host = strtolower($parts['host'] ?? '');
+        $port = $parts['port'] ?? null;
+
+        if ($scheme !== 'https' || ! empty($parts['user']) || ! empty($parts['pass'])) {
+            return false;
+        }
+        if ($port !== null && (int) $port !== 443) {
+            return false;
+        }
+
+        return (bool) preg_match('/^(?:[a-z0-9-]+\.)+(?:googleusercontent\.com|ggpht\.com)$/i', $host);
+    }
+
+    public function storeGoogleAvatar(string $url, int $maxDimension = 512): string
+    {
+        if (! $this->isTrustedGoogleAvatarUrl($url)) {
+            throw new RuntimeException('Недовірений хост аватара Google.');
+        }
+
+        $response = Http::withoutRedirecting()
+            ->timeout(5)
+            ->connectTimeout(3)
+            ->withHeaders(['Accept' => 'image/jpeg,image/png,image/webp'])
+            ->get($url);
+
+        if ($response->status() !== 200) {
+            throw new RuntimeException('Не вдалося завантажити аватар Google.');
+        }
+
+        $contentType = strtolower(trim(explode(';', (string) $response->header('Content-Type'))[0]));
+        if ($contentType !== '' && ! in_array($contentType, ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'], true)) {
+            throw new RuntimeException('Непідтримуваний тип вмісту аватара Google.');
+        }
+
+        $bytes = $response->body();
+        if ($bytes === '' || strlen($bytes) > self::MAX_AVATAR_BYTES) {
+            throw new RuntimeException('Розмір аватара Google перевищує дозволений ліміт.');
+        }
+
+        return $this->storeBytes($bytes, 'avatars', $maxDimension);
     }
 
     public function delete(?string $path): void

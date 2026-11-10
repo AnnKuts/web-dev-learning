@@ -43,6 +43,8 @@ function buildHeaderAndModalsDom() {
 
         <div id="profileSettingsModal" role="dialog" aria-modal="true" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center">
             <div>
+                <img id="profileSettingsAvatar" alt="Фото профілю" class="hidden">
+                <div id="profileSettingsAvatarFallback">U</div>
                 <h2 id="profileSettingsTitle">Налаштування профілю</h2>
                 <p>Керування вашим обліковим записом</p>
                 <form id="profileSettingsForm" novalidate>
@@ -201,6 +203,8 @@ test('profile settings modal populates fields, validates and saves username/biog
     expect(document.getElementById('profileEmail').value).toBe('anna@example.com');
     expect(document.getElementById('profileEmail').readOnly).toBe(true);
     expect(document.getElementById('profileBio').value).toBe('PHP & Laravel developer');
+    expect(document.getElementById('profileSettingsAvatar').classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('profileSettingsAvatarFallback').textContent).toBe('A');
     expect(document.getElementById('profileSettingsGoogleBadge').classList.contains('hidden')).toBe(true);
     expect(document.getElementById('profileSettingsGoogleUnlinked').classList.contains('hidden')).toBe(false);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,8 @@ use Throwable;
 
 class GoogleAuthController extends Controller
 {
+    public function __construct(private readonly ImageService $images) {}
+
     public function start(Request $request)
     {
         abort_unless(config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'), 503, 'Google sign-in is not configured.');
@@ -54,7 +57,8 @@ class GoogleAuthController extends Controller
                 || ($identity->user['email_verified'] ?? false) !== true || ! is_string($email) || strlen($email) > 255 || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new \RuntimeException('Invalid identity');
             }
-            $user = DB::transaction(function () use ($flow, $subject, $email, $identity) {
+            $displayName = self::resolveDisplayName($identity);
+            $user = DB::transaction(function () use ($flow, $subject, $email, $displayName) {
                 $existing = User::withTrashed()->where('google_id', $subject)->first();
                 if ($flow['mode'] === 'link') {
                     $token = PersonalAccessToken::find($flow['token_id']);
@@ -69,6 +73,10 @@ class GoogleAuthController extends Controller
                 }
                 if ($existing) {
                     abort_if($existing->trashed(), 403);
+                    $repairedUsername = self::stripLegacyGeneratedSuffix($existing->username, $displayName);
+                    if ($repairedUsername !== null && $repairedUsername !== $existing->username) {
+                        $existing->forceFill(['username' => $repairedUsername])->save();
+                    }
 
                     return $existing;
                 }
@@ -77,7 +85,7 @@ class GoogleAuthController extends Controller
                     throw new \RuntimeException('Sign in with password and explicitly link Google');
                 }
                 $user = new User([
-                    'username' => Str::limit($identity->getName() ?: 'Google user', 200, '').' '.Str::random(12),
+                    'username' => $displayName,
                     'email' => strtolower($email),
                     'password' => null,
                 ]);
@@ -85,6 +93,7 @@ class GoogleAuthController extends Controller
 
                 return $user;
             });
+            $this->syncGoogleAvatarIfMissing($user, $identity);
             if ($flow['mode'] === 'link') {
                 return $this->finish('google_status=linked');
             }
@@ -126,6 +135,61 @@ class GoogleAuthController extends Controller
                 'token' => $user->createToken('google-browser')->plainTextToken,
             ])->header('Cache-Control', 'no-store');
         });
+    }
+
+    public static function resolveDisplayName(object $identity): string
+    {
+        $rawName = method_exists($identity, 'getName') ? $identity->getName() : null;
+        if (! is_string($rawName) || trim($rawName) === '') {
+            $rawName = $identity->user['name'] ?? $identity->user['given_name'] ?? null;
+        }
+        $cleaned = is_string($rawName)
+            ? trim(preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $rawName) ?? '')
+            : '';
+        $cleaned = preg_replace('/\s+/u', ' ', $cleaned) ?? '';
+
+        if (mb_strlen($cleaned) < 2) {
+            return 'Google user';
+        }
+
+        return Str::limit($cleaned, 200, '');
+    }
+
+    public static function stripLegacyGeneratedSuffix(string $currentUsername, ?string $googleDisplayName = null): ?string
+    {
+        $candidates = array_values(array_filter(array_unique([
+            $googleDisplayName ? Str::limit(trim($googleDisplayName), 200, '') : null,
+            'Google user',
+        ])));
+
+        foreach ($candidates as $baseName) {
+            $pattern = '/^'.preg_quote($baseName, '/').' ([A-Za-z0-9]{12})$/u';
+            if (preg_match($pattern, $currentUsername)) {
+                return $baseName;
+            }
+        }
+
+        return null;
+    }
+
+    private function syncGoogleAvatarIfMissing(User $user, object $identity): void
+    {
+        if (! empty($user->avatar_path)) {
+            return;
+        }
+        $avatarUrl = method_exists($identity, 'getAvatar') ? $identity->getAvatar() : null;
+        if (! is_string($avatarUrl) || trim($avatarUrl) === '') {
+            $avatarUrl = $identity->user['picture'] ?? null;
+        }
+        if (! is_string($avatarUrl) || trim($avatarUrl) === '') {
+            return;
+        }
+        try {
+            $path = $this->images->storeGoogleAvatar(trim($avatarUrl), 512);
+            $user->forceFill(['avatar_path' => $path])->save();
+        } catch (Throwable $e) {
+            Log::warning('Google avatar sync skipped', ['user_id' => $user->id]);
+        }
     }
 
     private function validToken(?string $bearer): ?PersonalAccessToken

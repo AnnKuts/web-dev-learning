@@ -8,7 +8,10 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Tests\TestCase;
 
@@ -19,6 +22,7 @@ class GoogleAuthTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('images');
         $this->withCredentials();
         config(['services.google' => ['client_id' => 'test-client', 'client_secret' => 'test-secret', 'redirect' => 'http://localhost/auth/google/callback'], 'auth.dev_bypass' => false]);
     }
@@ -160,5 +164,207 @@ class GoogleAuthTest extends TestCase
         $this->travel(61)->seconds();
         $this->postJson('/auth/google/exchange', ['code' => $code])->assertUnauthorized();
         $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    private function fakePngBytes(int $width = 64, int $height = 64): string
+    {
+        $img = imagecreatetruecolor($width, $height);
+        $color = imagecolorallocate($img, 79, 70, 229);
+        imagefill($img, 0, 0, $color);
+        ob_start();
+        imagepng($img);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return $bytes;
+    }
+
+    public function test_google_registration_uses_actual_display_name_handles_unicode_and_fallbacks_without_random_suffix(): void
+    {
+        // 1. Exact display name without random suffix
+        $code1 = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-ann',
+            'email' => 'ann@example.test',
+            'name' => 'Ann Kuts',
+        ])));
+        $res1 = $this->postJson('/auth/google/exchange', ['code' => $code1])->assertOk();
+        $res1->assertJsonPath('user.username', 'Ann Kuts');
+        $this->assertSame('Ann Kuts', User::where('google_id', 'sub-ann')->firstOrFail()->username);
+
+        // 2. Unicode / Ukrainian display name with spaces
+        $code2 = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-ukr',
+            'email' => 'ukr@example.test',
+            'name' => 'Анна Куць',
+        ])));
+        $res2 = $this->postJson('/auth/google/exchange', ['code' => $code2])->assertOk();
+        $res2->assertJsonPath('user.username', 'Анна Куць');
+
+        // 3. Missing / empty display name uses safe fallback without suffix
+        $code3 = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-empty-name',
+            'email' => 'noname@example.test',
+            'name' => '   ',
+        ])));
+        $res3 = $this->postJson('/auth/google/exchange', ['code' => $code3])->assertOk();
+        $res3->assertJsonPath('user.username', 'Google user');
+    }
+
+    public function test_repairs_legacy_generated_suffix_while_preserving_manually_edited_usernames(): void
+    {
+        // Existing Google user with a legacy 12-char random suffix
+        $legacyUser = User::factory()->create([
+            'username' => 'Ann Kuts VFZilIBV9fNt',
+            'email' => 'ann@example.test',
+            'password' => null,
+            'user_bio' => 'My custom bio',
+        ]);
+        $legacyUser->forceFill(['google_id' => 'sub-legacy'])->save();
+
+        // Subsequent Google login repairs the legacy generated suffix
+        $code = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-legacy',
+            'email' => 'ann@example.test',
+            'name' => 'Ann Kuts',
+        ])));
+        $this->postJson('/auth/google/exchange', ['code' => $code])
+            ->assertOk()
+            ->assertJsonPath('user.username', 'Ann Kuts')
+            ->assertJsonPath('user.user_bio', 'My custom bio');
+        $this->assertSame('Ann Kuts', $legacyUser->fresh()->username);
+
+        // User manually edits their username in Profile Settings
+        $legacyUser->forceFill(['username' => 'Anna Kuts Official'])->save();
+
+        // Subsequent Google login must NOT overwrite the manually edited username
+        $code2 = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-legacy',
+            'email' => 'ann@example.test',
+            'name' => 'Ann Kuts',
+        ])));
+        $this->postJson('/auth/google/exchange', ['code' => $code2])
+            ->assertOk()
+            ->assertJsonPath('user.username', 'Anna Kuts Official')
+            ->assertJsonPath('user.user_bio', 'My custom bio');
+        $this->assertSame('Anna Kuts Official', $legacyUser->fresh()->username);
+    }
+
+    public function test_google_avatar_is_used_when_no_custom_avatar_exists_and_custom_avatar_takes_priority(): void
+    {
+        $avatarUrl = 'https://lh3.googleusercontent.com/a/google-profile-photo';
+        Http::fake([
+            $avatarUrl => Http::response($this->fakePngBytes(), 200, ['Content-Type' => 'image/png']),
+        ]);
+
+        // 1. New Google user automatically gets Google profile picture
+        $code = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-photo',
+            'email' => 'photo@example.test',
+            'name' => 'Ann Kuts',
+            'picture' => $avatarUrl,
+        ])));
+        $exchange = $this->postJson('/auth/google/exchange', ['code' => $code])->assertOk();
+        $token = $exchange->json('token');
+        $user = User::where('google_id', 'sub-photo')->firstOrFail();
+
+        $this->assertNotNull($user->avatar_path);
+        Storage::disk('images')->assertExists($user->avatar_path);
+        $this->assertNotEmpty($exchange->json('user.avatar_url'));
+        Http::assertSentCount(1);
+
+        // 2. Subsequent Google login does not re-download or duplicate the avatar file
+        $firstAvatarPath = $user->avatar_path;
+        $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-photo',
+            'email' => 'photo@example.test',
+            'name' => 'Ann Kuts',
+            'picture' => $avatarUrl,
+        ])));
+        $this->assertSame($firstAvatarPath, $user->fresh()->avatar_path);
+        Http::assertSentCount(1);
+
+        // 3. User uploads a custom avatar -> custom avatar replaces Google avatar and takes priority on future Google logins
+        $uploadRes = $this->postJson('/api/me/avatar', [
+            'avatar' => UploadedFile::fake()->image('custom.png', 300, 300),
+        ], ['Authorization' => 'Bearer '.$token])->assertOk();
+
+        $customAvatarPath = $user->fresh()->avatar_path;
+        $this->assertNotSame($firstAvatarPath, $customAvatarPath);
+        Storage::disk('images')->assertExists($customAvatarPath);
+        Storage::disk('images')->assertMissing($firstAvatarPath);
+        $this->assertNotEmpty($uploadRes->json('data.avatar_url'));
+
+        // Log in with Google again: custom avatar must NOT be overwritten
+        $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-photo',
+            'email' => 'photo@example.test',
+            'name' => 'Ann Kuts',
+            'picture' => $avatarUrl,
+        ])));
+        $this->assertSame($customAvatarPath, $user->fresh()->avatar_path);
+        Http::assertSentCount(1);
+    }
+
+    public function test_existing_google_user_without_avatar_receives_google_picture_on_login_and_failures_do_not_break_login(): void
+    {
+        $avatarUrl = 'https://lh3.googleusercontent.com/a/existing-user-photo';
+        $failingUrl = 'https://lh3.googleusercontent.com/a/broken-photo';
+        $untrustedUrl = 'https://evil.example.com/ssrf.png';
+
+        Http::fake([
+            $avatarUrl => Http::response($this->fakePngBytes(), 200, ['Content-Type' => 'image/png']),
+            $failingUrl => Http::response('Not found', 404),
+            $untrustedUrl => Http::response($this->fakePngBytes(), 200, ['Content-Type' => 'image/png']),
+        ]);
+
+        // Unrelated user account that should not be modified
+        $unrelated = User::factory()->create(['username' => 'Unrelated', 'avatar_path' => null]);
+
+        // Existing Google user with no custom avatar
+        $existingGoogleUser = User::factory()->create([
+            'username' => 'Existing Google User',
+            'email' => 'existing@example.test',
+            'password' => null,
+            'avatar_path' => null,
+        ]);
+        $existingGoogleUser->forceFill(['google_id' => 'sub-existing'])->save();
+
+        // 1. Failing Google avatar download (404) does not break login
+        $codeFail = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-existing',
+            'email' => 'existing@example.test',
+            'name' => 'Existing Google User',
+            'picture' => $failingUrl,
+        ])));
+        $this->postJson('/auth/google/exchange', ['code' => $codeFail])
+            ->assertOk()
+            ->assertJsonPath('user.avatar_url', null);
+        $this->assertNull($existingGoogleUser->fresh()->avatar_path);
+
+        // 2. Untrusted avatar host is rejected without breaking login
+        $codeUntrusted = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-existing',
+            'email' => 'existing@example.test',
+            'name' => 'Existing Google User',
+            'picture' => $untrustedUrl,
+        ])));
+        $this->postJson('/auth/google/exchange', ['code' => $codeUntrusted])
+            ->assertOk()
+            ->assertJsonPath('user.avatar_url', null);
+        $this->assertNull($existingGoogleUser->fresh()->avatar_path);
+
+        // 3. Subsequent Google login with valid picture populates avatar for existing Google user
+        $codeSuccess = $this->code($this->googleCallback($this->start([
+            'sub' => 'sub-existing',
+            'email' => 'existing@example.test',
+            'name' => 'Existing Google User',
+            'picture' => $avatarUrl,
+        ])));
+        $resSuccess = $this->postJson('/auth/google/exchange', ['code' => $codeSuccess])->assertOk();
+        $this->assertNotNull($existingGoogleUser->fresh()->avatar_path);
+        $this->assertNotEmpty($resSuccess->json('user.avatar_url'));
+
+        // Unrelated user remains untouched
+        $this->assertNull($unrelated->fresh()->avatar_path);
     }
 }
