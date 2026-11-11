@@ -1,16 +1,52 @@
 import { initAuth } from './auth.js';
+import { initComments, loadComments } from './comments.js';
+import { initAvatar } from './avatar.js';
 import { initPosts, loadPosts, loadPost, clearPostTagFilter } from './posts.js';
 import { initPostForms, startEditPost } from './post-form.js';
 import { initTags, loadTags, loadTagsForSelects } from './tags.js';
 import { initUsers, loadUsers } from './users.js';
-import { initHeaderMenu, initModals } from './ui.js';
+import { initHeaderMenu, initModals, renderGuestState, renderUserState } from './ui.js';
+import { getAuthToken, getCurrentUser } from './api.js';
 
 let currentTab = 'posts';
 
+function syncAuthControls() {
+    const authenticated = Boolean(getAuthToken());
+    document.querySelectorAll('[data-auth-required]').forEach(control => {
+        control.hidden = !authenticated;
+    });
+    if (!authenticated && currentTab !== 'posts') switchTab('posts');
+}
+
 function refreshCurrentTab(page) {
+    if (!getAuthToken()) {
+        const detail = document.getElementById('postDetail');
+        if (detail) {
+            document.getElementById('commentsSection')?.classList.add('hidden');
+            document.getElementById('commentsList')?.replaceChildren();
+            document.getElementById('commentForm')?.classList.add('hidden');
+            if (window.location.pathname !== '/') {
+                window.location.assign('/');
+                return;
+            }
+            document.getElementById('viewPostHeader').textContent = '';
+            document.getElementById('viewPostMeta').textContent = '';
+            document.getElementById('viewPostTags').textContent = '';
+            renderGuestState(document.getElementById('viewPostDescription'));
+        }
+        renderGuestState(document.getElementById('postsList'));
+        renderGuestState(document.getElementById('tagsList'));
+        renderGuestState(document.getElementById('usersList'));
+        document.getElementById('postsPagination')?.replaceChildren();
+        document.getElementById('usersPagination')?.replaceChildren();
+        return;
+    }
     const postPage = document.getElementById('postDetail');
     if (postPage) {
+        document.getElementById('commentsSection')?.classList.remove('hidden');
+        document.getElementById('commentForm')?.classList.remove('hidden');
         loadPost(postPage.dataset.postId);
+        loadComments(postPage.dataset.postId);
         if (!document.getElementById('publishedPosts').classList.contains('hidden')) loadPosts(page);
         return;
     }
@@ -39,10 +75,17 @@ function switchTab(tab, page) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('auth:expired', () => {
+        renderUserState(getCurrentUser(), getAuthToken());
+        syncAuthControls();
+        refreshCurrentTab();
+    });
+    syncAuthControls();
     initHeaderMenu();
     initModals();
     initAuth(() => {
-        loadTagsForSelects();
+        syncAuthControls();
+        if (getAuthToken()) loadTagsForSelects();
         refreshCurrentTab();
     });
     initPostForms(page => {
@@ -58,6 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         switchTab('posts', page);
     });
+    initAvatar();
+    initComments();
     initPosts(startEditPost, () => switchTab('posts', 1));
     initTags(refreshCurrentTab);
     initUsers();
@@ -65,9 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
     document.getElementById('refreshBtn')?.addEventListener('click', () => {
-        loadTagsForSelects();
+        if (getAuthToken()) loadTagsForSelects();
         refreshCurrentTab();
     });
-    loadTagsForSelects();
+    if (getAuthToken()) loadTagsForSelects();
     refreshCurrentTab();
 });

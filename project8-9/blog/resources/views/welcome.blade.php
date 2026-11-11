@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Blog API Dashboard')
+@section('title', 'Blog UA')
 
 @section('content')
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-    <nav class="flex space-x-2 bg-slate-200/70 p-1 rounded-xl w-fit">
+    <nav data-auth-required hidden class="flex space-x-2 bg-slate-200/70 p-1 rounded-xl w-fit">
         <button type="button" data-tab="posts" id="tabBtn-posts" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-white text-slate-900 shadow-sm transition">
             Статті
         </button>
@@ -16,7 +16,7 @@
         </button>
     </nav>
 
-    <div class="flex items-center space-x-2">
+    <div data-auth-required hidden class="flex items-center space-x-2">
         <button type="button" data-modal-open="newTagModal" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg transition shadow-2xs">
             <i class="fa-solid fa-plus mr-1" aria-hidden="true"></i> Новий тег
         </button>

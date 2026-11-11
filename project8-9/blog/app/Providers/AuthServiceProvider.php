@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Comment;
 use App\Models\Post;
 use App\Models\Tag;
 use App\Models\User;
+use App\Policies\CommentPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\TagPolicy;
 use App\Policies\UserPolicy;
@@ -15,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         Post::class => PostPolicy::class,
+        Comment::class => CommentPolicy::class,
         Tag::class => TagPolicy::class,
         User::class => UserPolicy::class,
     ];
@@ -29,6 +32,9 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::before(function (?User $user, string $ability, array $arguments) {
             if ($ability === 'delete' && ($arguments[0] ?? null) instanceof Tag) {
+                return null;
+            }
+            if (in_array($ability, ['update', 'delete', 'restore', 'forceDelete'], true) && ($arguments[0] ?? null) instanceof User) {
                 return null;
             }
             if (app()->isLocal() && filter_var(config('auth.dev_bypass', false), FILTER_VALIDATE_BOOLEAN)) {

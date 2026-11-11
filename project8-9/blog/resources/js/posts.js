@@ -1,11 +1,19 @@
-import { fetchPosts, fetchPost, deletePost, readResponse } from './api.js';
-import { renderListError, escapeHtml, showToast } from './ui.js';
+import { fetchPosts, fetchPost, deletePost, readResponse, getAuthToken, getCurrentUser } from './api.js';
+import { renderListError, renderGuestState, escapeHtml, showToast } from './ui.js';
 import { renderPagination } from './pagination.js';
 
 let currentPostPage = 1;
 const currentPostsMap = new Map();
 let postRequest;
 let postsRequest;
+
+function canManagePost(post) {
+    if (typeof post?.can_edit === 'boolean') return post.can_edit;
+    const currentUser = getCurrentUser();
+    if (!currentUser?.id) return false;
+    const authorId = post?.user?.id ?? post?.user_id;
+    return authorId !== undefined && authorId !== null && Number(authorId) === Number(currentUser.id);
+}
 
 export function clearPostTagFilter() {
     const url = new URL(window.location.href);
@@ -27,10 +35,21 @@ export async function loadPost(id) {
     const description = document.getElementById('viewPostDescription');
     const meta = document.getElementById('viewPostMeta');
     const tags = document.getElementById('viewPostTags');
+    const images = document.getElementById('viewPostImages');
+    if (!getAuthToken()) {
+        postRequest?.abort();
+        header.textContent = '';
+        meta.textContent = '';
+        tags.textContent = '';
+        if (images) images.replaceChildren();
+        renderGuestState(description);
+        return;
+    }
     header.textContent = 'Завантаження статті…';
     description.textContent = '';
     meta.textContent = '';
     tags.textContent = '';
+    if (images) images.replaceChildren();
     try {
         const json = await readResponse(await fetchPost(id, request.signal));
         if (request.signal.aborted) return;
@@ -38,12 +57,20 @@ export async function loadPost(id) {
         header.textContent = post.header;
         description.textContent = post.description;
         meta.innerHTML = `
-            <span><i class="fa-solid fa-user mr-1" aria-hidden="true"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
+            <span class="inline-flex items-center gap-1">${post.user?.avatar_url ? `<img src="${escapeHtml(post.user.avatar_url)}" alt="" loading="lazy" class="h-6 w-6 rounded-full object-cover">` : '<i class="fa-solid fa-user" aria-hidden="true"></i>'}${escapeHtml(post.user?.username || 'Невідомий')}</span>
             <span><i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
         `;
         tags.innerHTML = (post.tags || []).map(tag => `<a href="/?tag=${tag.id}" data-action="filter-tag" class="hover:underline">#${escapeHtml(tag.tag_name)}</a>`).join(' ');
+        if (images) images.innerHTML = (post.images || []).map(image => `<a href="${escapeHtml(image.url)}" target="_blank" rel="noopener noreferrer" aria-label="Відкрити зображення статті"><img src="${escapeHtml(image.url)}" alt="Зображення статті" loading="lazy" class="aspect-square w-full rounded-xl object-cover hover:opacity-90"></a>`).join('');
     } catch (error) {
         if (request.signal.aborted) return;
+        if (error.status === 401 && !getAuthToken()) {
+            header.textContent = '';
+            meta.textContent = '';
+            tags.textContent = '';
+            renderGuestState(description);
+            return;
+        }
         header.textContent = 'Не вдалося завантажити статтю';
         if (error.status === 404) error.message = 'Статтю не знайдено. Можливо, її видалено.';
         renderListError(description, error);
@@ -57,6 +84,12 @@ export async function loadPosts(page = currentPostPage) {
     if (!container) return;
 
     postsRequest?.abort();
+    if (!getAuthToken()) {
+        currentPostsMap.clear();
+        if (pagination) pagination.replaceChildren();
+        renderGuestState(container);
+        return;
+    }
     const request = new AbortController();
     postsRequest = request;
     const query = document.getElementById('postSearch')?.value.trim() || '';
@@ -108,19 +141,20 @@ export async function loadPosts(page = currentPostPage) {
                         </div>
 
                         <div class="flex items-center space-x-3 text-xs text-slate-400">
-                            <span class="font-medium text-slate-600"><i class="fa-solid fa-user mr-1 text-slate-500"></i>${escapeHtml(post.user?.username || 'Невідомий')}</span>
+                            <span class="inline-flex items-center gap-1 font-medium text-slate-600">${post.user?.avatar_url ? `<img src="${escapeHtml(post.user.avatar_url)}" alt="" loading="lazy" class="h-6 w-6 rounded-full object-cover">` : '<i class="fa-solid fa-user text-slate-500"></i>'}${escapeHtml(post.user?.username || 'Невідомий')}</span>
                             <span><i class="fa-regular fa-clock mr-1 text-slate-400"></i>${new Date(post.created_at).toLocaleString('uk-UA')}</span>
                         </div>
                     </div>
 
+                    ${canManagePost(post) ? `
                     <div class="flex items-center space-x-2 shrink-0">
-                        <button type="button" data-action="edit-post" data-id="${post.id}" class="p-2 text-slate-400 hover:text-indigo-600 transition" title="Редагувати">
-                            <i class="fa-solid fa-pen-to-square"></i>
+                        <button type="button" data-action="edit-post" data-id="${post.id}" aria-label="Редагувати статтю" class="action-icon-btn action-icon-btn-edit inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition cursor-pointer" title="Редагувати">
+                            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                         </button>
-                        <button type="button" data-action="delete-post" data-id="${post.id}" class="p-2 text-slate-400 hover:text-rose-600 transition" title="Видалити">
-                            <i class="fa-solid fa-trash-can"></i>
+                        <button type="button" data-action="delete-post" data-id="${post.id}" aria-label="Видалити статтю" class="action-icon-btn action-icon-btn-delete inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 transition cursor-pointer" title="Видалити">
+                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                         </button>
-                    </div>
+                    </div>` : ''}
                 </div>
             </article>
         `).join('');
@@ -128,6 +162,7 @@ export async function loadPosts(page = currentPostPage) {
         renderPagination(pagination, json.meta || {}, 'page-posts', posts.length);
     } catch (err) {
         if (request.signal.aborted) return;
+        if (err.status === 401 && !getAuthToken()) { renderGuestState(container); return; }
         renderListError(container, err);
     }
 }
@@ -146,11 +181,12 @@ export function initPosts(onEdit, onTagSelected) {
             return;
         }
         const id = Number(button.dataset.id);
-        if (button.dataset.action === 'edit-post' && currentPostsMap.has(id)) {
-            onEdit(currentPostsMap.get(id));
+        const post = currentPostsMap.get(id);
+        if (button.dataset.action === 'edit-post' && post && canManagePost(post)) {
+            onEdit(post);
         }
         if (button.dataset.action === 'page-posts') loadPosts(Number(button.dataset.page));
-        if (button.dataset.action !== 'delete-post' || !confirm('Ви впевнені, що хочете видалити цю статтю?')) return;
+        if (button.dataset.action !== 'delete-post' || !post || !canManagePost(post) || !confirm('Ви впевнені, що хочете видалити цю статтю?')) return;
         try {
             await readResponse(await deletePost(id));
             showToast('Статтю видалено!');

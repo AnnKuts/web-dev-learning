@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prependToGroup('api', \App\Http\Middleware\DevAuthBypass::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\ProfilePostListing::class);
         $middleware->priority([
             \App\Http\Middleware\DevAuthBypass::class,
             \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,

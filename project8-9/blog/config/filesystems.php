@@ -2,10 +2,8 @@
 
 return [
 
-    
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    
     'disks' => [
 
         'local' => [
@@ -25,6 +23,19 @@ return [
             'report' => false,
         ],
 
+        'images' => [
+            'driver' => env('IMAGE_DISK_DRIVER', 'local'),
+            'root' => storage_path('app/images'),
+            'serve' => true,
+            'key' => env('IMAGE_ACCESS_KEY_ID'),
+            'secret' => env('IMAGE_SECRET_ACCESS_KEY'),
+            'region' => env('IMAGE_REGION', 'auto'),
+            'bucket' => env('IMAGE_BUCKET'),
+            'endpoint' => env('IMAGE_ENDPOINT'),
+            'use_path_style_endpoint' => env('IMAGE_PATH_STYLE', false),
+            'throw' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -40,7 +51,6 @@ return [
 
     ],
 
-    
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],

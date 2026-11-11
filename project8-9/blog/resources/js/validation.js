@@ -84,13 +84,19 @@ export function clearPostErrors(prefix) {
     clearFieldError(`${prefix}Header`, `${prefix}HeaderError`);
     clearFieldError(`${prefix}Description`, `${prefix}DescriptionError`);
     clearFieldError(`${prefix}TagCheckboxes`, `${prefix}TagsError`);
+    clearFieldError(`${prefix}ImageDropzone`, `${prefix}ImagesError`);
 }
 
-export function showPostErrors(prefix, errors) {
+export function showPostErrors(prefix, errors = {}) {
+    if (!errors || typeof errors !== 'object') return;
     if (errors.header) setFieldError(`${prefix}Header`, `${prefix}HeaderError`, errors.header.join(' '));
     if (errors.description) setFieldError(`${prefix}Description`, `${prefix}DescriptionError`, errors.description.join(' '));
     const tagErrors = Object.entries(errors)
         .filter(([field]) => field === 'tags' || field.startsWith('tags.'))
         .flatMap(([, messages]) => messages);
     if (tagErrors.length) setFieldError(`${prefix}TagCheckboxes`, `${prefix}TagsError`, [...new Set(tagErrors)].join(' '));
+    const imageErrors = Object.entries(errors)
+        .filter(([field]) => field === 'images' || field.startsWith('images.') || field === 'remove_images' || field.startsWith('remove_images.'))
+        .flatMap(([, messages]) => messages);
+    if (imageErrors.length) setFieldError(`${prefix}ImageDropzone`, `${prefix}ImagesError`, [...new Set(imageErrors)].join(' '));
 }
