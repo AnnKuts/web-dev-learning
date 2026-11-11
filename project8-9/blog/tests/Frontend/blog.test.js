@@ -440,3 +440,37 @@ test('edit article modal distinguishes new images from existing images and cance
     expect(existingCheckboxes[0].checked).toBe(false);
     expect(fetch.mock.calls.every(([, opts]) => !opts?.method || opts.method === 'GET')).toBe(true);
 });
+
+test('article cards render edit and delete icons only for the article author', async () => {
+    setAuth('test-token', { id: 1, username: 'Anna' });
+    const posts = [
+        {
+            id: 10,
+            header: 'Моя стаття',
+            description: 'Опис моєї статті достатньої довжини.',
+            created_at: '2026-01-01T12:00:00Z',
+            user: { id: 1, username: 'Anna' },
+            can_edit: true,
+            tags: [],
+        },
+        {
+            id: 11,
+            header: 'Чужа стаття',
+            description: 'Опис чужої статті достатньої довжини.',
+            created_at: '2026-01-02T12:00:00Z',
+            user: { id: 2, username: 'OtherAuthor' },
+            can_edit: false,
+            tags: [],
+        },
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ data: posts, meta: { last_page: 1 } })));
+
+    await loadPosts(1);
+
+    const articles = document.querySelectorAll('#postsList article');
+    expect(articles).toHaveLength(2);
+    expect(articles[0].querySelector('[data-action="edit-post"][data-id="10"]')).not.toBeNull();
+    expect(articles[0].querySelector('[data-action="delete-post"][data-id="10"]')).not.toBeNull();
+    expect(articles[1].querySelector('[data-action="edit-post"]')).toBeNull();
+    expect(articles[1].querySelector('[data-action="delete-post"]')).toBeNull();
+});

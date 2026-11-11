@@ -25,6 +25,29 @@
         <div id="commentsList" class="space-y-3" aria-live="polite"></div>
         <button id="commentsMore" type="button" class="mt-4 hidden text-sm font-semibold text-indigo-700 hover:underline">Наступні коментарі</button>
     </section>
+
+    <div id="deleteCommentModal" role="dialog" aria-modal="true" aria-labelledby="deleteCommentModalTitle" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl relative">
+            <div class="flex items-start gap-3.5">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <i class="fa-solid fa-trash-can text-sm" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="deleteCommentModalTitle" class="text-base font-bold text-slate-900">Видалити коментар?</h3>
+                    <p class="mt-1 text-xs leading-relaxed text-slate-500">Ви дійсно хочете видалити цей коментар? Цю дію неможливо скасувати.</p>
+                </div>
+            </div>
+            <div class="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" data-comment-delete-cancel class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                    Скасувати
+                </button>
+                <button type="button" id="confirmDeleteCommentBtn" data-comment-delete-confirm class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-rose-700 active:bg-rose-800 transition cursor-pointer disabled:opacity-50">
+                    Видалити
+                </button>
+            </div>
+        </div>
+    </div>
+
     <section id="publishedPosts" class="hidden mt-8" aria-label="Список статей">
         @include('partials.posts.list')
     </section>

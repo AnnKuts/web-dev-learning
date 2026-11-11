@@ -64,8 +64,8 @@ test('comment cards render accessible icon action buttons only for authorized co
         return Response.json({ data: items, meta: { last_page: 1 } });
     });
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('prompt', vi.fn(() => 'Оновлений коментар'));
-    vi.stubGlobal('confirm', vi.fn(() => true));
+    const confirmSpy = vi.fn();
+    vi.stubGlobal('confirm', confirmSpy);
 
     initComments();
     await loadComments(5);
@@ -110,7 +110,21 @@ test('comment cards render accessible icon action buttons only for authorized co
     }));
 
     document.querySelector('[data-comment-id="10"] [data-comment-action="delete"]').click();
+    expect(confirmSpy).not.toHaveBeenCalled();
+    const deleteModal = document.getElementById('deleteCommentModal');
+    expect(deleteModal).not.toBeNull();
+    expect(deleteModal.classList.contains('hidden')).toBe(false);
+
+    deleteModal.querySelector('[data-comment-delete-cancel]').click();
+    expect(deleteModal.classList.contains('hidden')).toBe(true);
+    expect(document.querySelector('[data-comment-id="10"]')).not.toBeNull();
+
+    document.querySelector('[data-comment-id="10"] [data-comment-action="delete"]').click();
+    expect(deleteModal.classList.contains('hidden')).toBe(false);
+    document.getElementById('confirmDeleteCommentBtn').click();
+
     await vi.waitFor(() => expect(document.querySelector('[data-comment-id="10"]')).toBeNull());
+    expect(deleteModal.classList.contains('hidden')).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({
         method: 'DELETE',
     }));

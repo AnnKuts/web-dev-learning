@@ -1,4 +1,4 @@
-import { fetchPosts, fetchPost, deletePost, readResponse, getAuthToken } from './api.js';
+import { fetchPosts, fetchPost, deletePost, readResponse, getAuthToken, getCurrentUser } from './api.js';
 import { renderListError, renderGuestState, escapeHtml, showToast } from './ui.js';
 import { renderPagination } from './pagination.js';
 
@@ -6,6 +6,14 @@ let currentPostPage = 1;
 const currentPostsMap = new Map();
 let postRequest;
 let postsRequest;
+
+function canManagePost(post) {
+    if (typeof post?.can_edit === 'boolean') return post.can_edit;
+    const currentUser = getCurrentUser();
+    if (!currentUser?.id) return false;
+    const authorId = post?.user?.id ?? post?.user_id;
+    return authorId !== undefined && authorId !== null && Number(authorId) === Number(currentUser.id);
+}
 
 export function clearPostTagFilter() {
     const url = new URL(window.location.href);
@@ -138,6 +146,7 @@ export async function loadPosts(page = currentPostPage) {
                         </div>
                     </div>
 
+                    ${canManagePost(post) ? `
                     <div class="flex items-center space-x-2 shrink-0">
                         <button type="button" data-action="edit-post" data-id="${post.id}" aria-label="Редагувати статтю" class="action-icon-btn action-icon-btn-edit inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition cursor-pointer" title="Редагувати">
                             <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
@@ -145,7 +154,7 @@ export async function loadPosts(page = currentPostPage) {
                         <button type="button" data-action="delete-post" data-id="${post.id}" aria-label="Видалити статтю" class="action-icon-btn action-icon-btn-delete inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 transition cursor-pointer" title="Видалити">
                             <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                         </button>
-                    </div>
+                    </div>` : ''}
                 </div>
             </article>
         `).join('');
@@ -172,11 +181,12 @@ export function initPosts(onEdit, onTagSelected) {
             return;
         }
         const id = Number(button.dataset.id);
-        if (button.dataset.action === 'edit-post' && currentPostsMap.has(id)) {
-            onEdit(currentPostsMap.get(id));
+        const post = currentPostsMap.get(id);
+        if (button.dataset.action === 'edit-post' && post && canManagePost(post)) {
+            onEdit(post);
         }
         if (button.dataset.action === 'page-posts') loadPosts(Number(button.dataset.page));
-        if (button.dataset.action !== 'delete-post' || !confirm('Ви впевнені, що хочете видалити цю статтю?')) return;
+        if (button.dataset.action !== 'delete-post' || !post || !canManagePost(post) || !confirm('Ви впевнені, що хочете видалити цю статтю?')) return;
         try {
             await readResponse(await deletePost(id));
             showToast('Статтю видалено!');

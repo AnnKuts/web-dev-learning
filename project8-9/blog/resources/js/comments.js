@@ -5,6 +5,54 @@ let page = 1;
 let postId;
 let comments = [];
 let editingCommentId = null;
+let deletingCommentId = null;
+
+function ensureDeleteCommentModal() {
+    let modal = document.getElementById('deleteCommentModal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'deleteCommentModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'deleteCommentModalTitle');
+    modal.className = 'modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs';
+    modal.innerHTML = `
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl relative">
+            <div class="flex items-start gap-3.5">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <i class="fa-solid fa-trash-can text-sm" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="deleteCommentModalTitle" class="text-base font-bold text-slate-900">Видалити коментар?</h3>
+                    <p class="mt-1 text-xs leading-relaxed text-slate-500">Ви дійсно хочете видалити цей коментар? Цю дію неможливо скасувати.</p>
+                </div>
+            </div>
+            <div class="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" data-comment-delete-cancel class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                    Скасувати
+                </button>
+                <button type="button" id="confirmDeleteCommentBtn" data-comment-delete-confirm class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-rose-700 active:bg-rose-800 transition cursor-pointer disabled:opacity-50">
+                    Видалити
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function openDeleteCommentModal(commentId) {
+    deletingCommentId = commentId;
+    const modal = ensureDeleteCommentModal();
+    modal.classList.remove('hidden');
+}
+
+function closeDeleteCommentModal() {
+    deletingCommentId = null;
+    const modal = document.getElementById('deleteCommentModal');
+    if (modal) modal.classList.add('hidden');
+}
 
 const avatar = author => author?.avatar_url
     ? `<img src="${escapeHtml(author.avatar_url)}" alt="" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover">`
@@ -83,6 +131,7 @@ export async function loadComments(id, nextPage = 1) {
     postId = id;
     page = nextPage;
     editingCommentId = null;
+    closeDeleteCommentModal();
     const list = document.getElementById('commentsList');
     if (!list) return;
     if (!getAuthToken()) {
@@ -158,17 +207,9 @@ export function initComments() {
                 return;
             }
 
-            if (button.dataset.commentAction !== 'delete' || !confirm('Видалити коментар?')) return;
-            button.disabled = true;
-            try {
-                await readResponse(await fetch(`/api/posts/${postId}/comments/${comment.id}`, {
-                    method: 'DELETE',
-                    headers: getHeaders(),
-                }));
-                editingCommentId = null;
-                await loadComments(postId, page);
-            } catch (error) { showToast(error.message, true); }
-            finally { button.disabled = false; }
+            if (button.dataset.commentAction === 'delete') {
+                openDeleteCommentModal(comment.id);
+            }
         });
 
         list.addEventListener('submit', async event => {
@@ -214,6 +255,40 @@ export function initComments() {
                     editingCommentId = null;
                     render();
                 }
+            }
+        });
+    }
+
+    const modal = ensureDeleteCommentModal();
+    if (modal && modal.dataset.bound !== 'true') {
+        modal.dataset.bound = 'true';
+        modal.addEventListener('click', async event => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target) return;
+
+            if (target === modal || target.closest('[data-comment-delete-cancel]')) {
+                closeDeleteCommentModal();
+                return;
+            }
+
+            const confirmBtn = target.closest('[data-comment-delete-confirm]');
+            if (!confirmBtn || deletingCommentId === null) return;
+
+            const commentIdToDelete = deletingCommentId;
+            confirmBtn.disabled = true;
+            try {
+                await readResponse(await fetch(`/api/posts/${postId}/comments/${commentIdToDelete}`, {
+                    method: 'DELETE',
+                    headers: getHeaders(),
+                }));
+                editingCommentId = null;
+                closeDeleteCommentModal();
+                await loadComments(postId, page);
+                showToast('Коментар видалено');
+            } catch (error) {
+                showToast(error.message, true);
+            } finally {
+                confirmBtn.disabled = false;
             }
         });
     }
