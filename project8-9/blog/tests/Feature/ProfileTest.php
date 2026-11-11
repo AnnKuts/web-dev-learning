@@ -26,7 +26,6 @@ class ProfileTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        // Update both username and biography
         $this->putJson("/api/users/{$user->id}", [
             'username' => 'UpdatedName',
             'user_bio' => 'Updated biography text',
@@ -39,7 +38,6 @@ class ProfileTest extends TestCase
         $this->assertSame('UpdatedName', $user->fresh()->username);
         $this->assertSame('Updated biography text', $user->fresh()->user_bio);
 
-        // Update only biography — username is preserved
         $this->putJson("/api/users/{$user->id}", [
             'user_bio' => 'Bio only change',
         ])
@@ -47,7 +45,6 @@ class ProfileTest extends TestCase
             ->assertJsonPath('data.username', 'UpdatedName')
             ->assertJsonPath('data.user_bio', 'Bio only change');
 
-        // Update only username — biography is preserved
         $this->putJson("/api/users/{$user->id}", [
             'username' => 'SecondName',
         ])
@@ -55,7 +52,6 @@ class ProfileTest extends TestCase
             ->assertJsonPath('data.username', 'SecondName')
             ->assertJsonPath('data.user_bio', 'Bio only change');
 
-        // Clear biography (empty string / null)
         $this->putJson("/api/users/{$user->id}", [
             'username' => 'SecondName',
             'user_bio' => '',
@@ -77,12 +73,10 @@ class ProfileTest extends TestCase
             'username' => 'IntruderUser',
         ]);
 
-        // Unauthenticated guest
         $this->putJson("/api/users/{$owner->id}", [
             'username' => 'HackedName',
         ])->assertUnauthorized();
 
-        // Authenticated different user
         Sanctum::actingAs($intruder);
         $this->putJson("/api/users/{$owner->id}", [
             'username' => 'HackedName',
@@ -100,29 +94,24 @@ class ProfileTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        // Empty username
         $this->putJson("/api/users/{$user->id}", [
             'username' => '',
         ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
 
-        // Whitespace-only username
         $this->putJson("/api/users/{$user->id}", [
             'username' => '   ',
         ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
 
-        // Too short (< 2 chars)
         $this->putJson("/api/users/{$user->id}", [
             'username' => 'A',
         ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
 
-        // Too long (> 255 chars)
         $this->putJson("/api/users/{$user->id}", [
             'username' => str_repeat('a', 256),
         ])->assertUnprocessable()->assertJsonValidationErrors(['username']);
 
         $this->assertSame('MyUsername', $user->fresh()->username);
 
-        // Display names are not unnecessarily restricted to be unique across users
         $this->putJson("/api/users/{$user->id}", [
             'username' => $existing->username,
         ])->assertOk()->assertJsonPath('data.username', 'Ann Kuts');

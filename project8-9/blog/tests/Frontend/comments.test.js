@@ -73,7 +73,6 @@ test('comment cards render accessible icon action buttons only for authorized co
     const ownCard = document.querySelector('[data-comment-id="10"]');
     const otherCard = document.querySelector('[data-comment-id="11"]');
 
-    // Own comment has accessible icon buttons matching article action pattern
     const editBtn = ownCard.querySelector('[data-comment-action="edit"]');
     const deleteBtn = ownCard.querySelector('[data-comment-action="delete"]');
     expect(editBtn).not.toBeNull();
@@ -85,11 +84,9 @@ test('comment cards render accessible icon action buttons only for authorized co
     expect(editBtn.className).toContain('action-icon-btn');
     expect(deleteBtn.className).toContain('action-icon-btn');
 
-    // Unauthorized comment hides edit and delete controls completely
     expect(otherCard.querySelector('[data-comment-action="edit"]')).toBeNull();
     expect(otherCard.querySelector('[data-comment-action="delete"]')).toBeNull();
 
-    // Clicking edit opens an inline textarea pre-filled with the comment's existing text (no browser prompt)
     editBtn.click();
     const editForm = document.querySelector('[data-comment-id="10"] [data-comment-edit-form]');
     const editInput = document.querySelector('[data-comment-id="10"] [data-comment-edit-input]');
@@ -97,12 +94,10 @@ test('comment cards render accessible icon action buttons only for authorized co
     expect(editInput).not.toBeNull();
     expect(editInput.value).toBe('Мій власний коментар');
 
-    // Clicking cancel restores the original comment view without calling PUT
     document.querySelector('[data-comment-id="10"] [data-comment-action="cancel-edit"]').click();
     expect(document.querySelector('[data-comment-id="10"] [data-comment-edit-form]')).toBeNull();
     expect(document.querySelector('[data-comment-id="10"] [data-comment-body]').textContent).toBe('Мій власний коментар');
 
-    // Reopen inline editor, modify text, and submit form to update comment
     document.querySelector('[data-comment-id="10"] [data-comment-action="edit"]').click();
     const reopenedInput = document.querySelector('[data-comment-id="10"] [data-comment-edit-input]');
     reopenedInput.value = 'Оновлений коментар';
@@ -114,7 +109,6 @@ test('comment cards render accessible icon action buttons only for authorized co
         body: JSON.stringify({ content: 'Оновлений коментар' }),
     }));
 
-    // Delete action removes comment
     document.querySelector('[data-comment-id="10"] [data-comment-action="delete"]').click();
     await vi.waitFor(() => expect(document.querySelector('[data-comment-id="10"]')).toBeNull());
     expect(fetchMock).toHaveBeenCalledWith('/api/posts/5/comments/10', expect.objectContaining({

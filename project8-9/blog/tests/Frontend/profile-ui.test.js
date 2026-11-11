@@ -115,17 +115,14 @@ test('guest vs authenticated header renders compact avatar button and keeps crea
     expect(dropdown).not.toBeNull();
     expect(dropdown.classList.contains('hidden')).toBe(true);
 
-    // Fallback initial is rendered when avatar_url is null
     const fallback = document.getElementById('headerUserAvatarFallback');
     expect(fallback).not.toBeNull();
     expect(fallback.textContent).toBe('A');
     expect(document.getElementById('headerUserAvatar')).toBeNull();
 
-    // Create article button remains outside the profile dropdown
     const createBtn = document.getElementById('createArticleBtn');
     expect(dropdown.contains(createBtn)).toBe(false);
 
-    // Mobile compatibility: authenticated header menu is inline and accessible without hamburger toggle
     expect(document.getElementById('headerMenuToggle').classList.contains('hidden')).toBe(true);
     expect(document.getElementById('headerMenuToggle').classList.contains('inline-flex')).toBe(false);
     expect(document.getElementById('headerMenuToggle').hidden).toBe(true);
@@ -149,17 +146,14 @@ test('dropdown opens, closes on outside click or Escape, supports keyboard navig
     expect(document.getElementById('userDropdownName').textContent).toBe('Anna');
     expect(document.getElementById('userDropdownEmail').textContent).toBe('anna@example.com');
 
-    // Click to open
     menuBtn.click();
     expect(dropdown.classList.contains('hidden')).toBe(false);
     expect(menuBtn.getAttribute('aria-expanded')).toBe('true');
 
-    // Click outside to close
     document.body.click();
     expect(dropdown.classList.contains('hidden')).toBe(true);
     expect(menuBtn.getAttribute('aria-expanded')).toBe('false');
 
-    // Open via ArrowDown and navigate menu items
     menuBtn.focus();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     expect(dropdown.classList.contains('hidden')).toBe(false);
@@ -169,7 +163,6 @@ test('dropdown opens, closes on outside click or Escape, supports keyboard navig
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     expect(document.activeElement).toBe(items[1]);
 
-    // Press Escape to close and return focus to trigger button
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(dropdown.classList.contains('hidden')).toBe(true);
     expect(menuBtn.getAttribute('aria-expanded')).toBe('false');
@@ -191,10 +184,8 @@ test('profile settings modal populates fields, validates and saves username/biog
     const menuBtn = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userDropdownMenu');
 
-    // Google link button is shown in dropdown when not connected
     expect(document.getElementById('googleLinkMenuBtn')).not.toBeNull();
 
-    // Open dropdown and click Profile Settings
     menuBtn.click();
     document.getElementById('profileSettingsMenuBtn').click();
 
@@ -210,16 +201,13 @@ test('profile settings modal populates fields, validates and saves username/biog
     expect(document.getElementById('profileSettingsGoogleBadge').classList.contains('hidden')).toBe(true);
     expect(document.getElementById('profileSettingsGoogleUnlinked').classList.contains('hidden')).toBe(false);
 
-    // Ensure profile settings modal does not duplicate avatar upload or Google link buttons
     expect(profileModal.querySelector('[data-modal-open="avatarModal"]')).toBeNull();
     expect(profileModal.querySelector('[data-modal-open="googleLinkModal"]')).toBeNull();
 
-    // Client-side validation rejects too-short username
     document.getElementById('profileUsername').value = 'A';
     document.getElementById('profileSettingsForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     expect(document.getElementById('profileUsernameError').classList.contains('hidden')).toBe(false);
 
-    // Server-side validation error (422) displays field error message
     const fetchMock = vi.fn(async (url, options) => {
         const body = JSON.parse(options.body);
         if (body.username === 'TakenName') {
@@ -246,7 +234,6 @@ test('profile settings modal populates fields, validates and saves username/biog
     await vi.waitFor(() => expect(document.getElementById('profileUsernameError').textContent).toBe('Це ім’я користувача вже зайняте.'));
     expect(profileModal.classList.contains('hidden')).toBe(false);
 
-    // Valid update saves via PUT /api/users/7 and immediately refreshes header, dropdown, and Google status
     document.getElementById('profileUsername').value = 'KutsAnna';
     document.getElementById('profileBio').value = 'Updated biography text';
     document.getElementById('profileSettingsForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -262,7 +249,6 @@ test('profile settings modal populates fields, validates and saves username/biog
     expect(document.getElementById('userDropdownName').textContent).toBe('KutsAnna');
     expect(document.getElementById('headerUserAvatarFallback').textContent).toBe('K');
 
-    // Because updated response has google_connected: true, dropdown hides "Підключити Google" and modal shows "Підключено"
     expect(document.getElementById('googleLinkMenuBtn')).toBeNull();
     expect(document.getElementById('profileSettingsGoogleBadge').classList.contains('hidden')).toBe(false);
     expect(document.getElementById('profileSettingsGoogleUnlinked').classList.contains('hidden')).toBe(true);
@@ -274,7 +260,6 @@ test('avatar modal centers properly, previews selected image, validates input, a
     renderUserState(initialUser, 'token-1');
     initAvatar();
 
-    // Open avatar modal from dropdown
     document.getElementById('userMenuBtn').click();
     document.getElementById('changeAvatarMenuBtn').click();
 
@@ -293,14 +278,12 @@ test('avatar modal centers properly, previews selected image, validates input, a
     expect(deleteBtn.classList.contains('hidden')).toBe(true);
     expect(saveBtn.disabled).toBe(true);
 
-    // Invalid file selection (> 2MB or wrong type) shows error and keeps save disabled
     const invalidFile = new File(['bad'], 'malware.txt', { type: 'text/plain' });
     Object.defineProperty(fileInput, 'files', { value: [invalidFile], configurable: true });
     fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     expect(document.getElementById('avatarError').classList.contains('hidden')).toBe(false);
     expect(saveBtn.disabled).toBe(true);
 
-    // Valid file selection shows immediate preview and enables save button
     const validFile = new File(['image-bytes'], 'photo.png', { type: 'image/png' });
     Object.defineProperty(fileInput, 'files', { value: [validFile], configurable: true });
     fileInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -309,7 +292,6 @@ test('avatar modal centers properly, previews selected image, validates input, a
     expect(placeholder.classList.contains('hidden')).toBe(true);
     expect(saveBtn.disabled).toBe(false);
 
-    // Submit avatar upload and verify immediate header update
     const fetchMock = vi.fn(async (url, options) => {
         if (url === '/api/me/avatar' && options.method === 'POST') {
             return Response.json({
@@ -342,13 +324,11 @@ test('avatar modal centers properly, previews selected image, validates input, a
     expect(document.getElementById('headerUserAvatar')?.getAttribute('src')).toBe('https://cdn.example.com/avatars/new.webp');
     expect(document.getElementById('headerUserAvatarFallback')).toBeNull();
 
-    // Reopen avatar modal: delete button should now be visible
     openModal('avatarModal');
     expect(deleteBtn.classList.contains('hidden')).toBe(false);
     expect(preview.getAttribute('src')).toBe('https://cdn.example.com/avatars/new.webp');
     expect(saveBtn.disabled).toBe(true);
 
-    // Delete avatar and verify header reverts to fallback initial
     deleteBtn.click();
     await vi.waitFor(() => expect(avatarModal.classList.contains('hidden')).toBe(true));
 

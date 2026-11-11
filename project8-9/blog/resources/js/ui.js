@@ -266,7 +266,6 @@ function bindGlobalUiListeners() {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
-        // Profile dropdown toggle & actions
         const userMenuBtn = document.getElementById('userMenuBtn');
         const userDropdownMenu = document.getElementById('userDropdownMenu');
         const userDropdownContainer = document.getElementById('userDropdownContainer');
@@ -283,7 +282,6 @@ function bindGlobalUiListeners() {
             }
         }
 
-        // Mobile guest header menu toggle
         const headerToggle = document.getElementById('headerMenuToggle');
         if (headerToggle && !headerToggle.classList.contains('hidden')) {
             if (target.closest('#headerMenuToggle')) {
@@ -297,7 +295,6 @@ function bindGlobalUiListeners() {
             }
         }
 
-        // Modals open / close / backdrop click
         const closeButton = target.closest('[data-modal-close]');
         const openButton = target.closest('[data-modal-open]');
         if (closeButton) closeModal(closeButton.dataset.modalClose);

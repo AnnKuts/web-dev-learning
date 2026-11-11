@@ -61,7 +61,6 @@ class PostImageTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // 1. Unsupported format returns specific Ukrainian message
         $unsupportedResponse = $this->actingAs($user)->post(
             '/api/posts',
             $this->data(['images' => [UploadedFile::fake()->create('document.pdf', 100, 'application/pdf')]]),
@@ -74,7 +73,6 @@ class PostImageTest extends TestCase
             implode(' ', $unsupportedResponse->json('errors.images\.0') ?? $unsupportedResponse->json('errors')['images.0'] ?? [])
         );
 
-        // 2. Oversized image (> 5 MB = 5120 KB) returns specific Ukrainian size message
         $oversizedResponse = $this->actingAs($user)->post(
             '/api/posts',
             $this->data(['images' => [UploadedFile::fake()->create('huge.png', 6000, 'image/png')]]),
@@ -87,7 +85,6 @@ class PostImageTest extends TestCase
             implode(' ', $oversizedResponse->json('errors')['images.0'] ?? [])
         );
 
-        // 3. Too many images (> 5) returns specific Ukrainian count message
         $tooManyResponse = $this->actingAs($user)->post(
             '/api/posts',
             $this->data(['images' => array_fill(0, 6, UploadedFile::fake()->image('photo.jpg'))]),
@@ -100,7 +97,6 @@ class PostImageTest extends TestCase
             implode(' ', $tooManyResponse->json('errors.images') ?? [])
         );
 
-        // 4. 8-bit palette PNG with alpha transparency converts cleanly to WebP
         $paletteImg = imagecreate(40, 40);
         $bg = imagecolorallocatealpha($paletteImg, 255, 0, 0, 64);
         imagefill($paletteImg, 0, 0, $bg);
@@ -122,7 +118,6 @@ class PostImageTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Generate a real > 2.5 MB uncompressed/low-compression PNG (1200x900 with pseudo-random noise)
         $width = 1200;
         $height = 900;
         $rawScanlines = '';
@@ -137,7 +132,6 @@ class PostImageTest extends TestCase
         $this->assertGreaterThan(2.5 * 1024 * 1024, strlen($realLargePngBytes));
         $this->assertLessThan(5 * 1024 * 1024, strlen($realLargePngBytes));
 
-        // 1. Upload the real ~3.2 MB PNG directly to backend
         $realPngFile = UploadedFile::fake()->createWithContent('real-screenshot-3mb.png', $realLargePngBytes);
         $pngRes = $this->actingAs($user)->post(
             '/api/posts',
@@ -150,7 +144,6 @@ class PostImageTest extends TestCase
         $storedWebpSize = Storage::disk('images')->size($storedPngPath);
         $this->assertLessThan(1.5 * 1024 * 1024, $storedWebpSize);
 
-        // 2. Upload a 5-image article (mix of PNG, JPEG, and WebP)
         $fiveImages = [
             UploadedFile::fake()->image('photo1.jpg', 1600, 1200),
             UploadedFile::fake()->image('photo2.png', 1400, 1000),
